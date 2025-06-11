@@ -5,20 +5,29 @@
 
 set -e
 
+# バージョン情報
+VERSION="1.0.0"
+
 # 使用方法表示
 show_usage() {
     cat << EOF
 🤖 Multi-Claude システム
 
 使用方法:
-  $0         - システム起動
-  $0 --exit  - システム完全終了
-  $0 --help  - このヘルプを表示
+  $0           - システム起動
+  $0 --exit    - システム完全終了
+  $0 --help    - このヘルプを表示
+  $0 --version - バージョン情報を表示
 
 機能:
   起動: tmux環境構築 + ターミナルウィンドウ起動 + Claude Code起動
   終了: 全tmuxセッション停止 + ターミナル閉鎖 + 一時ファイル削除
 EOF
+}
+
+# バージョン表示
+show_version() {
+    echo "Multi-Claude System v${VERSION}"
 }
 
 # 色付きログ関数
@@ -89,6 +98,10 @@ case "${1:-}" in
         ;;
     --help|-h)
         show_usage
+        exit 0
+        ;;
+    --version|-v)
+        show_version
         exit 0
         ;;
     "")
