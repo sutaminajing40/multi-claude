@@ -1,0 +1,137 @@
+#!/bin/bash
+
+# 🚀 Multi-Claude システム起動スクリプト
+# 2つのターミナルウィンドウで完全なマルチエージェント環境を構築
+
+set -e
+
+# 色付きログ関数
+log_info() {
+    echo -e "\033[1;32m[INFO]\033[0m $1"
+}
+
+log_success() {
+    echo -e "\033[1;34m[SUCCESS]\033[0m $1"
+}
+
+log_error() {
+    echo -e "\033[1;31m[ERROR]\033[0m $1"
+}
+
+echo "🤖 Multi-Claude システム起動"
+echo "============================="
+echo ""
+
+# 現在のディレクトリ取得
+CURRENT_DIR=$(pwd)
+
+# STEP 1: 環境チェック
+log_info "🔍 環境チェック中..."
+
+# tmuxの存在確認
+if ! command -v tmux &> /dev/null; then
+    log_error "tmuxがインストールされていません"
+    echo "インストール: brew install tmux"
+    exit 1
+fi
+
+# claudeの存在確認
+if ! command -v claude &> /dev/null; then
+    log_error "claude commandが見つかりません"
+    echo "Claude Codeがインストールされていることを確認してください"
+    exit 1
+fi
+
+log_success "✅ 環境チェック完了"
+
+# STEP 2: tmux環境構築
+log_info "🏗️  tmux環境構築中..."
+
+# setup.shを実行（既存の環境構築）
+if [ -f "./setup.sh" ]; then
+    ./setup.sh
+else
+    log_error "setup.shが見つかりません"
+    exit 1
+fi
+
+# STEP 3: ターミナルウィンドウ起動
+log_info "💻 ターミナルウィンドウ起動中..."
+
+# OSの検出
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    TERMINAL_APP="Terminal"
+    
+    # ウィンドウ1: PRESIDENT（メインウィンドウ）
+    osascript << EOF
+tell application "$TERMINAL_APP"
+    activate
+    set president_window to do script "cd '$CURRENT_DIR' && echo '🎯 PRESIDENT ウィンドウ' && tmux attach-session -t president"
+    set name of president_window to "Multi-Claude: PRESIDENT"
+end tell
+EOF
+
+    sleep 2
+
+    # ウィンドウ2: MULTIAGENT（サブウィンドウ）
+    osascript << EOF
+tell application "$TERMINAL_APP"
+    set multiagent_window to do script "cd '$CURRENT_DIR' && echo '👥 MULTIAGENT ウィンドウ' && tmux attach-session -t multiagent"
+    set name of multiagent_window to "Multi-Claude: MULTIAGENT"
+end tell
+EOF
+
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux
+    if command -v gnome-terminal &> /dev/null; then
+        # GNOME Terminal
+        gnome-terminal --title="Multi-Claude: PRESIDENT" -- bash -c "cd '$CURRENT_DIR' && echo '🎯 PRESIDENT ウィンドウ' && tmux attach-session -t president; exec bash" &
+        sleep 2
+        gnome-terminal --title="Multi-Claude: MULTIAGENT" -- bash -c "cd '$CURRENT_DIR' && echo '👥 MULTIAGENT ウィンドウ' && tmux attach-session -t multiagent; exec bash" &
+    elif command -v xterm &> /dev/null; then
+        # xterm
+        xterm -title "Multi-Claude: PRESIDENT" -e "cd '$CURRENT_DIR' && echo '🎯 PRESIDENT ウィンドウ' && tmux attach-session -t president" &
+        sleep 2
+        xterm -title "Multi-Claude: MULTIAGENT" -e "cd '$CURRENT_DIR' && echo '👥 MULTIAGENT ウィンドウ' && tmux attach-session -t multiagent" &
+    else
+        log_error "対応するターミナルが見つかりません"
+        exit 1
+    fi
+else
+    log_error "対応していないOS: $OSTYPE"
+    exit 1
+fi
+
+log_success "✅ ターミナルウィンドウ起動完了"
+
+# STEP 4: Claude Code自動起動
+sleep 3
+log_info "🤖 Claude Code自動起動中..."
+
+# PRESIDENT起動
+tmux send-keys -t president 'claude' C-m
+sleep 2
+
+# MULTIAGENT起動（全ペイン）
+for i in {0..3}; do
+    tmux send-keys -t multiagent:0.$i 'claude' C-m
+    sleep 1
+done
+
+log_success "✅ Claude Code起動完了"
+
+echo ""
+echo "🎉 Multi-Claude システム起動完了！"
+echo "=================================="
+echo ""
+echo "📋 使用方法:"
+echo "  1. 🎯 PRESIDENTウィンドウ: メインの対話窓口"
+echo "  2. 👥 MULTIAGENTウィンドウ: BOSS+WORKERs監視用"
+echo ""
+echo "💬 PRESIDENTに話しかけてタスクを依頼してください："
+echo "     例: 「Pythonスクリプトを3人で作って」"
+echo ""
+echo "🔧 システム制御:"
+echo "  終了: Ctrl+C でClaude終了、tmux kill-server で完全リセット"
+echo "  再起動: multi-claude"

@@ -21,6 +21,34 @@ PRESIDENT → BOSS → Workers の階層型指示システムを体感できま�
 
 ## 🚀 クイックスタート
 
+### 🌐 グローバルインストール（最推奨）
+
+```bash
+# 1. リポジトリクローン
+git clone https://github.com/nishimoto265/Claude-Code-Communication.git
+cd Claude-Code-Communication
+
+# 2. グローバルインストール
+./install.sh
+
+# 3. 任意のディレクトリで使用
+cd ~/your-project/
+multi-claude
+```
+
+これで**どこからでも**`multi-claude`コマンドが使えます！
+
+### 🎯 ローカル起動（このディレクトリ内のみ）
+
+```bash
+# ワンコマンドで完全なマルチエージェント環境を起動
+./multi-claude
+```
+
+これだけで2つのウィンドウが開いて、PRESIDENTとの対話が開始できます！
+
+### 📖 従来の手動セットアップ
+
 ### 0. リポジトリのクローン
 
 ```bash
@@ -67,6 +95,27 @@ PRESIDENTセッションで直接入力：
 ```
 あなたはpresidentです。指示書に従って
 ```
+
+## 🎯 動的指示書システム（新機能）
+
+### 使用方法
+PRESIDENTに直接タスクを依頼するだけ：
+```
+「Pythonでファイル一覧を取得するスクリプトを3つのファイルに分けて作って」
+「ウェブサイトのスクレイピングを並行処理で実行して」
+「データベースから情報を取得してCSV出力して」
+```
+
+### フロー
+```
+ユーザー → PRESIDENT（指示書生成） → BOSS（指示書読み込み） → WORKERs（指示書実行）
+```
+
+PRESIDENTが自動的に：
+- タスクを分析
+- BOSSとWORKER用の指示書を動的生成  
+- 指示書をファイルに保存
+- BOSSに実行指示を送信
 
 ## 📜 指示書について
 
