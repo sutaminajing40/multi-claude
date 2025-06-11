@@ -51,7 +51,15 @@
       "Bash($HOME/bin/multi-claude:*)",
       "Bash(cat:*)",
       "Bash(git remote set-url:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(./multi-claude --exit)",
+      "Bash(git tag:*)",
+      "Bash(gh repo create:*)",
+      "Bash(git clone:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }
