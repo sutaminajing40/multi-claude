@@ -143,10 +143,39 @@ setup_first_time() {
         chmod +x ./setup.sh ./agent-send.sh 2>/dev/null || true
     fi
     
-    # CLAUDE.mdがなければテンプレートからコピー
-    if [ -n "$MULTI_CLAUDE_SHARE" ] && [ ! -f "./CLAUDE.md" ]; then
-        log_info "CLAUDE.mdを作成中..."
-        cp "${MULTI_CLAUDE_SHARE}/CLAUDE_template.md" "./CLAUDE.md" 2>/dev/null || true
+    # CLAUDE.mdの処理（既存ファイルを保持）
+    if [ -n "$MULTI_CLAUDE_SHARE" ]; then
+        if [ -f "./CLAUDE.md" ]; then
+            # 既存のCLAUDE.mdがある場合、Multi-Claudeシステム設定を追加
+            log_info "既存のCLAUDE.mdにMulti-Claudeシステム設定を追加中..."
+            
+            # システム設定が既に追加されているかチェック
+            if ! grep -q "## 🤖 Multi-Claude システム設定" "./CLAUDE.md"; then
+                # 既存の内容を一時保存
+                cp "./CLAUDE.md" "./CLAUDE.md.original"
+                
+                # Multi-Claudeシステム設定を先頭に追加
+                cp "${MULTI_CLAUDE_SHARE}/CLAUDE_template.md" "./CLAUDE.md.tmp"
+                echo "" >> "./CLAUDE.md.tmp"
+                echo "---" >> "./CLAUDE.md.tmp"
+                echo "" >> "./CLAUDE.md.tmp"
+                echo "## 📋 プロジェクト概要（既存のCLAUDE.md）" >> "./CLAUDE.md.tmp"
+                echo "" >> "./CLAUDE.md.tmp"
+                cat "./CLAUDE.md.original" >> "./CLAUDE.md.tmp"
+                
+                # 新しいCLAUDE.mdとして保存
+                mv "./CLAUDE.md.tmp" "./CLAUDE.md"
+                rm "./CLAUDE.md.original"
+                
+                log_success "✅ 既存のCLAUDE.mdを保持しつつ、システム設定を追加しました"
+            else
+                log_info "Multi-Claudeシステム設定は既に追加されています"
+            fi
+        else
+            # CLAUDE.mdがない場合は新規作成
+            log_info "CLAUDE.mdを作成中..."
+            cp "${MULTI_CLAUDE_SHARE}/CLAUDE_template.md" "./CLAUDE.md" 2>/dev/null || true
+        fi
     fi
     
     # instructionsディレクトリがなければコピー
