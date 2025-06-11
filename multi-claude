@@ -6,7 +6,7 @@
 set -e
 
 # バージョン情報
-VERSION="1.0.4"
+VERSION="1.0.5"
 
 # 使用方法表示
 show_usage() {
@@ -125,9 +125,15 @@ CURRENT_DIR=$(pwd)
 BREW_PREFIX="$(brew --prefix 2>/dev/null || echo '/usr/local')"
 if [ -d "${BREW_PREFIX}/Cellar/multi-claude" ]; then
     # Homebrew経由でインストールされた場合
-    MULTI_CLAUDE_SHARE="${BREW_PREFIX}/share/multi-claude"
+    # 最新バージョンのディレクトリを取得
+    MULTI_CLAUDE_VERSION=$(ls -1 "${BREW_PREFIX}/Cellar/multi-claude" | sort -V | tail -1)
+    MULTI_CLAUDE_BASE="${BREW_PREFIX}/Cellar/multi-claude/${MULTI_CLAUDE_VERSION}"
+    MULTI_CLAUDE_BIN="${MULTI_CLAUDE_BASE}/bin"
+    MULTI_CLAUDE_SHARE="${MULTI_CLAUDE_BASE}/share"
 else
     # ローカル実行の場合
+    MULTI_CLAUDE_BASE=""
+    MULTI_CLAUDE_BIN=""
     MULTI_CLAUDE_SHARE=""
 fi
 
@@ -136,10 +142,10 @@ setup_first_time() {
     log_info "🎯 初回セットアップを実行します..."
     
     # 必要なファイルをコピー
-    if [ -n "$MULTI_CLAUDE_SHARE" ] && [ ! -f "./setup.sh" ]; then
+    if [ -n "$MULTI_CLAUDE_BIN" ] && [ ! -f "./setup.sh" ]; then
         log_info "スクリプトファイルをコピー中..."
-        cp "${BREW_PREFIX}/bin/setup.sh" ./ 2>/dev/null || true
-        cp "${BREW_PREFIX}/bin/agent-send.sh" ./ 2>/dev/null || true
+        cp "${MULTI_CLAUDE_BIN}/setup.sh" ./ 2>/dev/null || true
+        cp "${MULTI_CLAUDE_BIN}/agent-send.sh" ./ 2>/dev/null || true
         chmod +x ./setup.sh ./agent-send.sh 2>/dev/null || true
     fi
     
