@@ -1,6 +1,9 @@
-# 🤖 Tmux Multi-Agent Communication Demo
+# 🤖 Multi-Claude System
 
-Agent同士がやり取りするtmux環境のデモシステム
+グローバルで動作するマルチエージェント Claude Code システム
+
+> **📍 プロジェクトについて**  
+> このプロジェクトは [nishimoto265/Claude-Code-Communication](https://github.com/nishimoto265/Claude-Code-Communication) からフォークし、大幅な機能拡張を行ったものです。元のtmux-based multi-agent demoを基に、グローバルインストール機能、動的指示書システム、エラーハンドリング改善等を追加しています。
 
 ## 🎯 デモ概要
 
@@ -196,6 +199,24 @@ rm -f ./tmp/worker*_done.txt
 # 再構築（自動クリア付き）
 ./setup.sh
 ```
+
+## 📜 クレジット・ライセンス
+
+### 🍴 フォーク元
+このプロジェクトは以下からフォークされています：
+- **直接のフォーク元**: [nishimoto265/Claude-Code-Communication](https://github.com/nishimoto265/Claude-Code-Communication)
+
+### ✨ 主な拡張機能
+- **🌐 グローバルインストールシステム** (`install.sh`)
+- **🎯 動的指示書生成** (president_dynamic.md, boss_dynamic.md, worker_dynamic.md)
+- **🔧 エラーフリーなAppleScript実装**
+- **📦 複数Claude Codeインストール方法対応**
+- **🚀 ワンコマンド環境構築** (`multi-claude`)
+
+### 🤝 オープンソースへの貢献
+- 元プロジェクトのコンセプトを尊重し、大幅な機能拡張を実施
+- コミュニティでの利用促進を目的としたHomebrew公開準備
+- フォーク元への貢献も歓迎します
 
 ---
 
