@@ -120,9 +120,73 @@ log_info "🌐 グローバルコマンド作成中..."
 cat > "$INSTALL_DIR/multi-claude-global" << 'EOF'
 #!/bin/bash
 
-# 🚀 Multi-Claude システム グローバルコマンド
+# 🚀 Multi-Claude システム グローバルコマンド（起動・終了）
 
 set -e
+
+# 使用方法表示
+show_usage() {
+    cat << 'EOFUSAGE'
+🤖 Multi-Claude システム
+
+使用方法:
+  multi-claude         - システム起動
+  multi-claude --exit  - システム完全終了
+  multi-claude --help  - このヘルプを表示
+
+機能:
+  起動: tmux環境構築 + ターミナルウィンドウ起動 + Claude Code起動
+  終了: 全tmuxセッション停止 + ターミナル閉鎖 + 一時ファイル削除
+EOFUSAGE
+}
+
+# システム終了機能
+exit_system() {
+    echo "🛑 Multi-Claude システム終了中..."
+    echo "================================="
+    
+    # STEP 1: tmuxセッション終了
+    log_info "🔌 tmuxセッション終了中..."
+    
+    if tmux has-session -t multiagent 2>/dev/null; then
+        tmux kill-session -t multiagent
+        log_info "multiagentセッション終了"
+    fi
+    
+    if tmux has-session -t president 2>/dev/null; then
+        tmux kill-session -t president  
+        log_info "presidentセッション終了"
+    fi
+    
+    # 他のmulti-claude関連セッションも終了
+    tmux list-sessions 2>/dev/null | grep -E "(multiagent|president)" | cut -d: -f1 | xargs -I {} tmux kill-session -t {} 2>/dev/null || true
+    
+    # STEP 2: 一時ファイル削除
+    log_info "🧹 一時ファイル削除中..."
+    rm -f ./tmp/worker*_done.txt 2>/dev/null || true
+    rmdir ./tmp 2>/dev/null || true
+    
+    # STEP 3: ターミナルウィンドウ閉鎖（macOSのみ）
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        log_info "🪟 ターミナルウィンドウ閉鎖中..."
+        osascript << 'EOL2' 2>/dev/null || true
+tell application "Terminal"
+    repeat with w in windows
+        repeat with t in tabs of w
+            if name of t contains "Multi-Claude" then
+                close t
+            end if
+        end repeat
+    end repeat
+end tell
+EOL2
+    fi
+    
+    log_success "✅ Multi-Claude システム完全終了"
+    echo ""
+    echo "👋 お疲れさまでした！"
+    exit 0
+}
 
 # 色付きログ関数
 log_info() {
@@ -140,6 +204,25 @@ log_error() {
 # 現在のディレクトリ
 CURRENT_DIR=$(pwd)
 MULTI_CLAUDE_DIR="$HOME/.multi-claude"
+
+# コマンドライン引数処理
+case "${1:-}" in
+    --exit)
+        exit_system
+        ;;
+    --help|-h)
+        show_usage
+        exit 0
+        ;;
+    "")
+        # 通常起動（既存処理続行）
+        ;;
+    *)
+        echo "❌ 不明なオプション: $1"
+        show_usage
+        exit 1
+        ;;
+esac
 
 echo "🤖 Multi-Claude システム起動"
 echo "============================="
