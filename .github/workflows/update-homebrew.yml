@@ -1,0 +1,63 @@
+name: Update Homebrew Formula
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  update-homebrew:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get release info
+        id: release_info
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          
+          # tarballのURLを生成
+          TARBALL_URL="https://github.com/${{ github.repository }}/archive/refs/tags/${VERSION}.tar.gz"
+          echo "TARBALL_URL=$TARBALL_URL" >> $GITHUB_OUTPUT
+          
+          # SHA256を計算（タグがpushされた直後なので、少し待つ）
+          sleep 5
+          SHA256=$(curl -sL "$TARBALL_URL" | sha256sum | cut -d' ' -f1)
+          echo "SHA256=$SHA256" >> $GITHUB_OUTPUT
+          
+          echo "Version: $VERSION"
+          echo "URL: $TARBALL_URL"
+          echo "SHA256: $SHA256"
+
+      - name: Checkout homebrew-multi-claude
+        uses: actions/checkout@v3
+        with:
+          repository: sutaminajing40/homebrew-multi-claude
+          token: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
+          path: homebrew-multi-claude
+
+      - name: Update Formula
+        run: |
+          cd homebrew-multi-claude
+          
+          # Formulaファイルを更新
+          sed -i "s|url \".*\"|url \"${{ steps.release_info.outputs.TARBALL_URL }}\"|" Formula/multi-claude.rb
+          sed -i "s|sha256 \".*\"|sha256 \"${{ steps.release_info.outputs.SHA256 }}\"|" Formula/multi-claude.rb
+          
+          # 変更を確認
+          echo "Updated Formula:"
+          cat Formula/multi-claude.rb | grep -E "(url|sha256)"
+
+      - name: Commit and push changes
+        run: |
+          cd homebrew-multi-claude
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          
+          git add Formula/multi-claude.rb
+          git commit -m "Update to ${{ steps.release_info.outputs.VERSION }}" || echo "No changes to commit"
+          git push origin main
