@@ -121,6 +121,51 @@ echo ""
 # 現在のディレクトリ取得
 CURRENT_DIR=$(pwd)
 
+# Homebrewからのインストールを検出
+BREW_PREFIX="$(brew --prefix 2>/dev/null || echo '/usr/local')"
+if [ -d "${BREW_PREFIX}/Cellar/multi-claude" ]; then
+    # Homebrew経由でインストールされた場合
+    MULTI_CLAUDE_SHARE="${BREW_PREFIX}/share/multi-claude"
+else
+    # ローカル実行の場合
+    MULTI_CLAUDE_SHARE=""
+fi
+
+# 初回セットアップ関数
+setup_first_time() {
+    log_info "🎯 初回セットアップを実行します..."
+    
+    # 必要なファイルをコピー
+    if [ -n "$MULTI_CLAUDE_SHARE" ] && [ ! -f "./setup.sh" ]; then
+        log_info "スクリプトファイルをコピー中..."
+        cp "${BREW_PREFIX}/bin/setup.sh" ./ 2>/dev/null || true
+        cp "${BREW_PREFIX}/bin/agent-send.sh" ./ 2>/dev/null || true
+        chmod +x ./setup.sh ./agent-send.sh 2>/dev/null || true
+    fi
+    
+    # CLAUDE.mdがなければテンプレートからコピー
+    if [ -n "$MULTI_CLAUDE_SHARE" ] && [ ! -f "./CLAUDE.md" ]; then
+        log_info "CLAUDE.mdを作成中..."
+        cp "${MULTI_CLAUDE_SHARE}/CLAUDE_template.md" "./CLAUDE.md" 2>/dev/null || true
+    fi
+    
+    # instructionsディレクトリがなければコピー
+    if [ -n "$MULTI_CLAUDE_SHARE" ] && [ ! -d "./instructions" ]; then
+        log_info "instructionsディレクトリをコピー中..."
+        cp -r "${MULTI_CLAUDE_SHARE}/instructions" ./ 2>/dev/null || true
+    fi
+    
+    # tmpディレクトリ作成
+    mkdir -p ./tmp
+    
+    log_success "✅ 初回セットアップ完了"
+}
+
+# STEP 0: 初回セットアップチェック
+if [ -n "$MULTI_CLAUDE_SHARE" ] && ([ ! -f "./setup.sh" ] || [ ! -f "./CLAUDE.md" ] || [ ! -d "./instructions" ]); then
+    setup_first_time
+fi
+
 # STEP 1: 環境チェック
 log_info "🔍 環境チェック中..."
 
@@ -148,6 +193,8 @@ if [ -f "./setup.sh" ]; then
     ./setup.sh
 else
     log_error "setup.shが見つかりません"
+    echo "ヒント: multi-claudeを実行するディレクトリにsetup.shが必要です"
+    echo "Homebrewでインストールした場合は、初回実行時に自動でコピーされます"
     exit 1
 fi
 
