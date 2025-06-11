@@ -3,7 +3,7 @@
 グローバルで動作するマルチエージェント Claude Code システム
 
 > **📍 プロジェクトについて**  
-> このプロジェクトは [nishimoto265/Claude-Code-Communication](https://github.com/nishimoto265/Claude-Code-Communication) からフォークし、大幅な機能拡張を行ったものです。元のtmux-based multi-agent demoを基に、グローバルインストール機能、動的指示書システム、エラーハンドリング改善等を追加しています。
+> このプロジェクトは [Akira-Papa/Claude-Code-Communication](https://github.com/Akira-Papa/Claude-Code-Communication) からフォークし、大幅な機能拡張を行ったものです。元のtmux-based multi-agent demoを基に、グローバルインストール機能、動的指示書システム、エラーハンドリング改善等を追加しています。
 
 ## 🎯 デモ概要
 
@@ -28,7 +28,7 @@ PRESIDENT → BOSS → Workers の階層型指示システムを体感できま�
 
 ```bash
 # 1. リポジトリクローン
-git clone https://github.com/nishimoto265/Claude-Code-Communication.git
+git clone https://github.com/sutaminajing40/Claude-Code-Communication.git
 cd Claude-Code-Communication
 
 # 2. グローバルインストール
@@ -203,8 +203,10 @@ rm -f ./tmp/worker*_done.txt
 ## 📜 クレジット・ライセンス
 
 ### 🍴 フォーク元
-このプロジェクトは以下からフォークされています：
-- **直接のフォーク元**: [nishimoto265/Claude-Code-Communication](https://github.com/nishimoto265/Claude-Code-Communication)
+このプロジェクトは以下のフォークチェーンで作成されています：
+- **オリジナル**: [nishimoto265/Claude-Code-Communication](https://github.com/nishimoto265/Claude-Code-Communication)
+- **直接のフォーク元**: [Akira-Papa/Claude-Code-Communication](https://github.com/Akira-Papa/Claude-Code-Communication)
+- **現在のリポジトリ**: sutaminajing40/Claude-Code-Communication
 
 ### ✨ 主な拡張機能
 - **🌐 グローバルインストールシステム** (`install.sh`)
