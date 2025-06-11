@@ -6,7 +6,7 @@
 set -e
 
 # バージョン情報
-VERSION="1.0.5"
+VERSION="1.0.6"
 
 # 使用方法表示
 show_usage() {
@@ -211,10 +211,26 @@ if ! command -v tmux &> /dev/null; then
     exit 1
 fi
 
+# Homebrewから実行される場合のPATH調整
+# ユーザーのホームディレクトリ内のバイナリパスを追加
+export PATH="$HOME/.local/bin:$HOME/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
+
 # claudeの存在確認
 if ! command -v claude &> /dev/null; then
     log_error "claude commandが見つかりません"
     echo "Claude Codeがインストールされていることを確認してください"
+    
+    # claude実行ファイルの検索を試みる
+    echo ""
+    echo "📍 claudeコマンドを検索中..."
+    CLAUDE_PATHS=$(find "$HOME" -name "claude" -type f -perm +111 2>/dev/null | grep -E "(bin|\.local)" | head -5)
+    if [ -n "$CLAUDE_PATHS" ]; then
+        echo "以下の場所で見つかりました:"
+        echo "$CLAUDE_PATHS"
+        echo ""
+        echo "PATHに追加するには:"
+        echo "export PATH=\"\$(dirname \$(echo '$CLAUDE_PATHS' | head -1)):\$PATH\""
+    fi
     exit 1
 fi
 
