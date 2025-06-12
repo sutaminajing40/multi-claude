@@ -21,3 +21,11 @@ Thumbs.db
 
 # Claude設定
 .claude/
+
+# テストカバレッジ
+coverage/
+*.coverage
+
+# パッケージング
+dist/
+build/
