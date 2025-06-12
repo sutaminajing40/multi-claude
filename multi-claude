@@ -6,7 +6,7 @@
 set -e
 
 # バージョン情報
-VERSION="1.0.6"
+VERSION="1.0.7"
 
 # 使用方法表示
 show_usage() {
@@ -213,17 +213,43 @@ fi
 
 # Homebrewから実行される場合のPATH調整
 # ユーザーのホームディレクトリ内のバイナリパスを追加
-export PATH="$HOME/.local/bin:$HOME/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
+export PATH="$HOME/.claude/local:$HOME/.local/bin:$HOME/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
 
-# claudeの存在確認
-if ! command -v claude &> /dev/null; then
+# claudeコマンドの検出（改善版）
+CLAUDE_CMD=""
+
+# 1. 直接パスを最優先で確認
+if [ -x "$HOME/.claude/local/claude" ]; then
+    CLAUDE_CMD="$HOME/.claude/local/claude"
+    log_info "🔍 claudeを検出: $CLAUDE_CMD"
+# 2. PATHからclaudeを検索（which使用）
+elif which claude >/dev/null 2>&1; then
+    CLAUDE_CMD=$(which claude 2>/dev/null)
+    log_info "🔍 claudeを検出: $CLAUDE_CMD"
+# 3. command -vでも試す（bashビルトイン）
+elif command -v claude >/dev/null 2>&1; then
+    CLAUDE_CMD="claude"
+    log_info "🔍 claudeを検出: command -v claude"
+# 4. claude-codeやclaude.codeなどのバリエーションも確認
+else
+    for cmd in claude-code claude.code; do
+        if which $cmd >/dev/null 2>&1; then
+            CLAUDE_CMD=$(which $cmd 2>/dev/null)
+            log_info "🔍 claudeを検出: $CLAUDE_CMD"
+            break
+        fi
+    done
+fi
+
+# 見つからない場合のみエラー
+if [ -z "$CLAUDE_CMD" ]; then
     log_error "claude commandが見つかりません"
     echo "Claude Codeがインストールされていることを確認してください"
     
     # claude実行ファイルの検索を試みる
     echo ""
     echo "📍 claudeコマンドを検索中..."
-    CLAUDE_PATHS=$(find "$HOME" -name "claude" -type f -perm +111 2>/dev/null | grep -E "(bin|\.local)" | head -5)
+    CLAUDE_PATHS=$(find "$HOME" -name "claude*" -type f -perm +111 2>/dev/null | grep -E "(bin|\.local|\.claude)" | head -5)
     if [ -n "$CLAUDE_PATHS" ]; then
         echo "以下の場所で見つかりました:"
         echo "$CLAUDE_PATHS"
@@ -304,12 +330,12 @@ sleep 3
 log_info "🤖 Claude Code自動起動中..."
 
 # PRESIDENT起動
-tmux send-keys -t president 'claude' C-m
+tmux send-keys -t president "$CLAUDE_CMD" C-m
 sleep 2
 
 # MULTIAGENT起動（全ペイン）
 for i in {0..3}; do
-    tmux send-keys -t multiagent:0.$i 'claude' C-m
+    tmux send-keys -t multiagent:0.$i "$CLAUDE_CMD" C-m
     sleep 1
 done
 
