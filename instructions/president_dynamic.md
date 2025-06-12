@@ -40,7 +40,22 @@ cat > instructions/worker_task.md << 'EOF'
 [ステップバイステップの作業手順]
 
 ## 完了確認
-[完了の判定方法と報告手順]
+作業完了後、以下のコマンドを実行してください：
+```bash
+# 完了ファイル作成（自分の番号に応じて）
+mkdir -p ./tmp
+touch ./tmp/worker1_done.txt  # worker1の場合
+# touch ./tmp/worker2_done.txt  # worker2の場合  
+# touch ./tmp/worker3_done.txt  # worker3の場合
+
+# 全員の完了確認
+if [ -f ./tmp/worker1_done.txt ] && [ -f ./tmp/worker2_done.txt ] && [ -f ./tmp/worker3_done.txt ]; then
+    echo "全員の作業完了を確認（最後の完了者として報告）"
+    ./agent-send.sh boss1 "全ワーカーの作業が完了しました"
+else
+    echo "他のWORKERの完了を待機中..."
+fi
+```
 EOF
 
 # BOSSに通知
