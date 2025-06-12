@@ -5,11 +5,72 @@
 > **📍 プロジェクトについて**  
 > このプロジェクトは [Akira-Papa/Claude-Code-Communication](https://github.com/Akira-Papa/Claude-Code-Communication) からフォークし、大幅な機能拡張を行ったものです。元のtmux-based multi-agent demoを基に、グローバルインストール機能、動的指示書システム、エラーハンドリング改善等を追加しています。
 
-## 🎯 デモ概要
+## 🎯 プロジェクト概要
 
-PRESIDENT → BOSS → Workers の階層型指示システムを体感できます
+### アーキテクチャ
+複数のClaude Codeインスタンスが協調動作する分散処理システム
 
-### 👥 エージェント構成
+```
+PRESIDENT (統括) → BOSS (管理) → WORKERs (実行)
+```
+
+### 主要機能
+- **🌐 グローバルインストール**: どこからでも`multi-claude`コマンドで起動
+- **🎯 動的指示書システム**: タスクに応じて自動的に指示書を生成
+- **🔄 エージェント間通信**: tmuxを利用した高速メッセージング
+- **📦 Homebrew対応**: `brew install`でワンステップインストール（準備中）
+
+## 🚀 インストール方法
+
+### 方法1: Homebrew経由（推奨）
+```bash
+# リポジトリ追加
+brew tap sutaminajing40/multi-claude
+
+# インストール
+brew install multi-claude
+
+# 使用開始
+multi-claude
+```
+
+### 方法2: 手動インストール
+```bash
+# リポジトリクローン
+git clone https://github.com/sutaminajing40/Claude-Code-Communication.git
+cd Claude-Code-Communication
+
+# グローバルインストール
+./install.sh
+
+# 使用開始
+multi-claude
+```
+
+## 💻 基本的な使い方
+
+### 1. システム起動
+```bash
+# 任意のディレクトリで実行可能
+multi-claude
+```
+
+### 2. PRESIDENTへタスク依頼
+PRESIDENTウィンドウで直接タスクを入力：
+```
+「Pythonでファイル一覧を取得するスクリプトを3つのファイルに分けて作って」
+「ウェブサイトのスクレイピングを並行処理で実行して」
+「データベースから情報を取得してCSV出力して」
+```
+
+### 3. 自動実行
+PRESIDENTが自動的に：
+1. タスクを分析
+2. BOSSとWORKER用の指示書を生成
+3. 各エージェントに指示を送信
+4. 実行結果を収集・報告
+
+## 👥 エージェント構成
 
 ```
 📊 PRESIDENT セッション (1ペイン)
@@ -22,150 +83,67 @@ PRESIDENT → BOSS → Workers の階層型指示システムを体感できま�
 └── worker3: 実行担当者C
 ```
 
-## 🚀 クイックスタート
+## 🛠️ 高度な使い方
 
-### 🌐 グローバルインストール（最推奨）
-
+### エージェント間メッセージ送信
 ```bash
-# 1. リポジトリクローン
-git clone https://github.com/sutaminajing40/Claude-Code-Communication.git
-cd Claude-Code-Communication
-
-# 2. グローバルインストール
-./install.sh
-
-# 3. 任意のディレクトリで使用
-cd ~/your-project/
-multi-claude
-```
-
-これで**どこからでも**`multi-claude`コマンドが使えます！
-
-### 🎯 ローカル起動（このディレクトリ内のみ）
-
-```bash
-# ワンコマンドで完全なマルチエージェント環境を起動
-./multi-claude
-```
-
-これだけで2つのウィンドウが開いて、PRESIDENTとの対話が開始できます！
-
-### 📖 従来の手動セットアップ
-
-### 0. リポジトリのクローン
-
-```bash
-git clone https://github.com/nishimoto265/Claude-Code-Communication.git
-cd Claude-Code-Communication
-```
-
-### 1. tmux環境構築
-
-⚠️ **注意**: 既存の `multiagent` と `president` セッションがある場合は自動的に削除されます。
-
-```bash
-./setup.sh
-```
-
-### 2. セッションアタッチ
-
-```bash
-# マルチエージェント確認
-tmux attach-session -t multiagent
-
-# プレジデント確認（別ターミナルで）
-tmux attach-session -t president
-```
-
-### 3. Claude Code起動
-
-**手順1: President認証**
-```bash
-# まずPRESIDENTで認証を実施
-tmux send-keys -t president 'claude' C-m
-```
-認証プロンプトに従って許可を与えてください。
-
-**手順2: Multiagent一括起動**
-```bash
-# 認証完了後、multiagentセッションを一括起動
-for i in {0..3}; do tmux send-keys -t multiagent:0.$i 'claude' C-m; done
-```
-
-### 4. デモ実行
-
-PRESIDENTセッションで直接入力：
-```
-あなたはpresidentです。指示書に従って
-```
-
-## 🎯 動的指示書システム（新機能）
-
-### 使用方法
-PRESIDENTに直接タスクを依頼するだけ：
-```
-「Pythonでファイル一覧を取得するスクリプトを3つのファイルに分けて作って」
-「ウェブサイトのスクレイピングを並行処理で実行して」
-「データベースから情報を取得してCSV出力して」
-```
-
-### フロー
-```
-ユーザー → PRESIDENT（指示書生成） → BOSS（指示書読み込み） → WORKERs（指示書実行）
-```
-
-PRESIDENTが自動的に：
-- タスクを分析
-- BOSSとWORKER用の指示書を動的生成  
-- 指示書をファイルに保存
-- BOSSに実行指示を送信
-
-## 📜 指示書について
-
-各エージェントの役割別指示書：
-- **PRESIDENT**: `instructions/president.md`
-- **boss1**: `instructions/boss.md` 
-- **worker1,2,3**: `instructions/worker.md`
-
-**Claude Code参照**: `CLAUDE.md` でシステム構造を確認
-
-**要点:**
-- **PRESIDENT**: 「あなたはpresidentです。指示書に従って」→ boss1に指示送信
-- **boss1**: PRESIDENT指示受信 → workers全員に指示 → 完了報告
-- **workers**: Hello World実行 → 完了ファイル作成 → 最後の人が報告
-
-## 🎬 期待される動作フロー
-
-```
-1. PRESIDENT → boss1: "あなたはboss1です。Hello World プロジェクト開始指示"
-2. boss1 → workers: "あなたはworker[1-3]です。Hello World 作業開始"  
-3. workers → ./tmp/ファイル作成 → 最後のworker → boss1: "全員作業完了しました"
-4. boss1 → PRESIDENT: "全員完了しました"
-```
-
-## 🔧 手動操作
-
-### agent-send.shを使った送信
-
-```bash
-# 基本送信
-./agent-send.sh [エージェント名] [メッセージ]
+./agent-send.sh [エージェント名] "[メッセージ]"
 
 # 例
 ./agent-send.sh boss1 "緊急タスクです"
 ./agent-send.sh worker1 "作業完了しました"
-./agent-send.sh president "最終報告です"
-
-# エージェント一覧確認
-./agent-send.sh --list
 ```
 
-## 🧪 確認・デバッグ
+### システム管理コマンド
+```bash
+# システム終了
+multi-claude --exit
+
+# ヘルプ表示
+multi-claude --help
+
+# バージョン確認
+multi-claude --version
+```
+
+## 🔄 CI/CDシステム
+
+### 自動リリースパイプライン
+```
+git tag → GitHub Actions → Homebrew Formula更新
+```
+
+### リリース方法
+```bash
+# バージョンタグを付けてプッシュ
+git tag v1.0.8 -m "新機能追加"
+git push origin v1.0.8
+
+# 15-18秒後にHomebrewで利用可能
+```
+
+### GitHub Actions設定
+- **update-homebrew.yml**: タグプッシュで自動実行
+- **update-homebrew-manual.yml**: 手動でFormula更新
+
+詳細は[CLAUDE.md](CLAUDE.md)のCI/CDセクションを参照してください。
+
+## 📜 指示書システム
+
+### 動的指示書
+- `instructions/boss_task.md`: BOSS用タスク指示
+- `instructions/worker_task.md`: WORKER用実行指示
+
+### 役割別指示書
+- `instructions/president_dynamic.md`: PRESIDENT役割定義
+- `instructions/boss_dynamic.md`: BOSS役割定義
+- `instructions/worker_dynamic.md`: WORKER役割定義
+
+## 🧪 デバッグ・ログ
 
 ### ログ確認
-
 ```bash
-# 送信ログ確認
+# 送信ログ
 cat logs/send_log.txt
 
 # 特定エージェントのログ
@@ -175,51 +153,45 @@ grep "boss1" logs/send_log.txt
 ls -la ./tmp/worker*_done.txt
 ```
 
-### セッション状態確認
-
+### セッション確認
 ```bash
-# セッション一覧
+# tmuxセッション一覧
 tmux list-sessions
 
-# ペイン一覧
+# ペイン構成確認
 tmux list-panes -t multiagent
-tmux list-panes -t president
 ```
 
-## 🔄 環境リセット
+## 🤝 コントリビューション
 
-```bash
-# セッション削除
-tmux kill-session -t multiagent
-tmux kill-session -t president
+### 開発フロー
+1. feature/* ブランチで開発
+2. ローカルテスト実施
+3. Pull Request作成
+4. mainブランチへマージ
+5. タグ付けで自動リリース
 
-# 完了ファイル削除
-rm -f ./tmp/worker*_done.txt
-
-# 再構築（自動クリア付き）
-./setup.sh
-```
+### イシュー・PR
+- バグ報告・機能要望は[Issues](https://github.com/sutaminajing40/Claude-Code-Communication/issues)へ
+- PRは大歓迎です！
 
 ## 📜 クレジット・ライセンス
 
-### 🍴 フォーク元
-このプロジェクトは以下のフォークチェーンで作成されています：
+### 🍴 フォークチェーン
 - **オリジナル**: [nishimoto265/Claude-Code-Communication](https://github.com/nishimoto265/Claude-Code-Communication)
 - **直接のフォーク元**: [Akira-Papa/Claude-Code-Communication](https://github.com/Akira-Papa/Claude-Code-Communication)
 - **現在のリポジトリ**: sutaminajing40/Claude-Code-Communication
 
 ### ✨ 主な拡張機能
-- **🌐 グローバルインストールシステム** (`install.sh`)
-- **🎯 動的指示書生成** (president_dynamic.md, boss_dynamic.md, worker_dynamic.md)
-- **🔧 エラーフリーなAppleScript実装**
-- **📦 複数Claude Codeインストール方法対応**
-- **🚀 ワンコマンド環境構築** (`multi-claude`)
+- 🌐 グローバルインストールシステム
+- 🎯 動的指示書生成機能
+- 🔧 エラーフリーなAppleScript実装
+- 📦 Homebrew Formula対応
+- 🚀 CI/CD自動化システム
 
-### 🤝 オープンソースへの貢献
-- 元プロジェクトのコンセプトを尊重し、大幅な機能拡張を実施
-- コミュニティでの利用促進を目的としたHomebrew公開準備
-- フォーク元への貢献も歓迎します
+### 📄 ライセンス
+MIT License - 詳細は[LICENSE](LICENSE)ファイルを参照
 
 ---
 
-🚀 **Agent Communication を体感してください！** 🤖✨ 
+🚀 **Multi-Claudeで分散AIエージェントシステムを体感してください！** 🤖✨

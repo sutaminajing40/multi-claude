@@ -6,7 +6,7 @@
 set -e
 
 # バージョン情報
-VERSION="1.0.7"
+VERSION="1.0.8"
 
 # 使用方法表示
 show_usage() {
@@ -287,8 +287,13 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     osascript << EOF
 tell application "$TERMINAL_APP"
     activate
-    set president_window to do script "cd '$CURRENT_DIR' && echo '🎯 PRESIDENT ウィンドウ' && tmux attach-session -t president"
-    set name of president_window to "Multi-Claude: PRESIDENT"
+    do script "cd '$CURRENT_DIR' && echo '🎯 PRESIDENT ウィンドウ' && tmux attach-session -t president"
+    delay 0.5
+    set currentWindow to front window
+    set currentTab to selected tab of currentWindow
+    tell currentTab
+        set custom title to "Multi-Claude: PRESIDENT"
+    end tell
 end tell
 EOF
 
@@ -297,8 +302,13 @@ EOF
     # ウィンドウ2: MULTIAGENT（サブウィンドウ）
     osascript << EOF
 tell application "$TERMINAL_APP"
-    set multiagent_window to do script "cd '$CURRENT_DIR' && echo '👥 MULTIAGENT ウィンドウ' && tmux attach-session -t multiagent"
-    set name of multiagent_window to "Multi-Claude: MULTIAGENT"
+    do script "cd '$CURRENT_DIR' && echo '👥 MULTIAGENT ウィンドウ' && tmux attach-session -t multiagent"
+    delay 0.5
+    set currentWindow to front window
+    set currentTab to selected tab of currentWindow
+    tell currentTab
+        set custom title to "Multi-Claude: MULTIAGENT"
+    end tell
 end tell
 EOF
 
