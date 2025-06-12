@@ -6,7 +6,7 @@
 set -e
 
 # バージョン情報
-VERSION="1.0.9"
+VERSION="1.0.10"
 
 # 使用方法表示
 show_usage() {
@@ -19,10 +19,12 @@ show_usage() {
   $0 --help    - このヘルプを表示
   $0 --version - バージョン情報を表示
   $0 --dangerously-skip-permissions - 権限確認をスキップして起動
+  $0 "[指示]"  - PRESIDENTに直接指示を送信
 
 機能:
   起動: tmux環境構築 + ターミナルウィンドウ起動 + Claude Code起動
   終了: 全tmuxセッション停止 + ターミナル閉鎖 + 一時ファイル削除
+  指示: PRESIDENTセッションに直接メッセージを送信
 EOF
 }
 
@@ -92,8 +94,9 @@ EOL
     exit 0
 }
 
-# 権限スキップフラグ
+# 権限スキップフラグと直接指示
 SKIP_PERMISSIONS=""
+DIRECT_MESSAGE=""
 
 # コマンドライン引数処理
 case "${1:-}" in
@@ -114,10 +117,14 @@ case "${1:-}" in
     "")
         # 通常起動（既存処理）
         ;;
-    *)
+    --*)
         echo "❌ 不明なオプション: $1"
         show_usage
         exit 1
+        ;;
+    *)
+        # 直接指示として扱う
+        DIRECT_MESSAGE="$1"
         ;;
 esac
 
@@ -172,7 +179,7 @@ setup_first_time() {
                 echo "" >> "./CLAUDE.md.tmp"
                 echo "---" >> "./CLAUDE.md.tmp"
                 echo "" >> "./CLAUDE.md.tmp"
-                echo "## 📋 プロジェクト概要（既存のCLAUDE.md）" >> "./CLAUDE.md.tmp"
+                echo "# 元のCLAUDE.md内容" >> "./CLAUDE.md.tmp"
                 echo "" >> "./CLAUDE.md.tmp"
                 cat "./CLAUDE.md.original" >> "./CLAUDE.md.tmp"
                 
@@ -406,17 +413,52 @@ done
 
 log_success "✅ Claude Code起動完了"
 
-echo ""
-echo "🎉 Multi-Claude システム起動完了！"
-echo "=================================="
-echo ""
-echo "📋 使用方法:"
-echo "  1. 🎯 PRESIDENTウィンドウ: メインの対話窓口"
-echo "  2. 👥 MULTIAGENTウィンドウ: BOSS+WORKERs監視用"
-echo ""
-echo "💬 PRESIDENTに話しかけてタスクを依頼してください："
-echo "     例: 「Pythonスクリプトを3人で作って」"
-echo ""
-echo "🔧 システム制御:"
-echo "  終了: Ctrl+C でClaude終了、tmux kill-server で完全リセット"
-echo "  再起動: multi-claude"
+# STEP 5: 直接指示の送信（オプション）
+if [ -n "$DIRECT_MESSAGE" ]; then
+    log_info "📨 PRESIDENTへ直接指示を送信中..."
+    sleep 2
+    
+    # agent-send.shを使用してメッセージ送信
+    if [ -f "./agent-send.sh" ]; then
+        ./agent-send.sh president "$DIRECT_MESSAGE"
+        log_success "✅ 指示を送信しました"
+        
+        # PRESIDENTセッションにアタッチ
+        echo ""
+        echo "🔍 PRESIDENTセッションに接続中..."
+        echo "   終了するには: Ctrl+B → D"
+        sleep 2
+        tmux attach-session -t president
+    else
+        log_error "agent-send.shが見つかりません"
+        exit 1
+    fi
+else
+    echo ""
+    echo "🎉 Multi-Claude システム起動完了！"
+    echo "=================================="
+    echo ""
+    echo "📋 使用方法:"
+    echo "  1. 🎯 PRESIDENTウィンドウ: メインの対話窓口"
+    echo "  2. 👥 MULTIAGENTウィンドウ: BOSS+WORKERs監視用"
+    echo ""
+    echo "💬 PRESIDENTに話しかけてタスクを依頼してください："
+    echo "     例: 「Pythonスクリプトを3人で作って」"
+    echo ""
+    echo "💡 直接指示も可能:"
+    echo "     multi-claude \"Pythonで計算機を作って\""
+    echo ""
+    echo "🔧 システム制御:"
+    echo "  終了: Ctrl+C でClaude終了、tmux kill-server で完全リセット"
+    echo "  再起動: multi-claude"
+    echo ""
+    
+    # 自動的にPRESIDENTセッションにアタッチ
+    echo "🔍 PRESIDENTセッションに自動接続中..."
+    echo "   セッションを抜けるには: Ctrl+B → D"
+    echo "   MULTIAGENTウィンドウを確認するには別ターミナルで: tmux attach-session -t multiagent"
+    sleep 3
+    
+    # PRESIDENTセッションにアタッチ
+    tmux attach-session -t president
+fi
