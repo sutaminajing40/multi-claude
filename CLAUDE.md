@@ -94,7 +94,7 @@ brew update && brew upgrade multi-claude
 ### コマンドラインオプション
 - `--exit`: システム完全終了
 - `--help`: ヘルプ表示
-- `--version`: バージョン情報（現在: v1.0.15）
+- `--version`: バージョン情報（現在: v1.0.16）
 - `--dangerously-skip-permissions`: 権限確認スキップ
 
 ### ファイル構成
