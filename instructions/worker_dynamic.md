@@ -17,7 +17,14 @@ cat instructions/worker_task.md
 # 指示書の内容に従って作業実行
 [動的に生成された具体的な作業コマンド]
 
+# 自分のワーカー番号を確認
+# BOSSからのメッセージ「あなたはworkerXです」またはCLAUDE.mdの役割定義を参照
+# multiagent:0.1 → worker1
+# multiagent:0.2 → worker2  
+# multiagent:0.3 → worker3
+
 # 完了ファイル作成（自分の番号に応じて）
+mkdir -p ./tmp
 touch ./tmp/worker1_done.txt  # worker1の場合
 # touch ./tmp/worker2_done.txt  # worker2の場合  
 # touch ./tmp/worker3_done.txt  # worker3の場合

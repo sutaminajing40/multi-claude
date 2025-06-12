@@ -21,6 +21,18 @@ Multi-Claude Communication Systemは、複数のClaude Codeインスタンスが
 通信フロー: ユーザー → PRESIDENT → boss1 → workers → boss1 → PRESIDENT
 ```
 
+## あなたの役割
+
+このシステムでは、あなたがどのtmuxペインで実行されているかによって役割が決まります：
+
+- **president:0** → あなたは **PRESIDENT** です
+- **multiagent:0.0** → あなたは **boss1** です
+- **multiagent:0.1** → あなたは **worker1** です
+- **multiagent:0.2** → あなたは **worker2** です
+- **multiagent:0.3** → あなたは **worker3** です
+
+各役割の詳細は `instructions/` ディレクトリの対応するファイルを参照してください。
+
 ## 開発コマンド
 
 ### システム操作
@@ -82,7 +94,7 @@ brew update && brew upgrade multi-claude
 ### コマンドラインオプション
 - `--exit`: システム完全終了
 - `--help`: ヘルプ表示
-- `--version`: バージョン情報（現在: v1.0.10）
+- `--version`: バージョン情報（現在: v1.0.15）
 - `--dangerously-skip-permissions`: 権限確認スキップ
 
 ### ファイル構成

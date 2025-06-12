@@ -13,10 +13,10 @@
 # 指示書を読み込み
 cat instructions/boss_task.md
 
-# 内容に基づいてWORKERに指示
-./agent-send.sh worker1 "instructions/worker_task.mdを確認してタスク実行"
-./agent-send.sh worker2 "instructions/worker_task.mdを確認してタスク実行"
-./agent-send.sh worker3 "instructions/worker_task.mdを確認してタスク実行"
+# 内容に基づいてWORKERに指示（ワーカー番号を明示）
+./agent-send.sh worker1 "あなたはworker1です。instructions/worker_task.mdを確認してタスク実行"
+./agent-send.sh worker2 "あなたはworker2です。instructions/worker_task.mdを確認してタスク実行"
+./agent-send.sh worker3 "あなたはworker3です。instructions/worker_task.mdを確認してタスク実行"
 
 # 完了後PRESIDENTに報告
 ./agent-send.sh president "全ワーカーのタスク完了を確認しました"

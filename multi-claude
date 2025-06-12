@@ -6,7 +6,7 @@
 set -e
 
 # バージョン情報
-VERSION="1.0.14"
+VERSION="1.0.15"
 
 # 使用方法表示
 show_usage() {

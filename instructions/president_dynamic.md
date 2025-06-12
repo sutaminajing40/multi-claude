@@ -24,9 +24,9 @@ cat > instructions/boss_task.md << 'EOF'
 3. 完了報告を待機してPRESIDENTに報告
 
 ## 送信コマンド
-./agent-send.sh worker1 "instructions/worker_task.mdを確認して作業開始"
-./agent-send.sh worker2 "instructions/worker_task.mdを確認して作業開始"  
-./agent-send.sh worker3 "instructions/worker_task.mdを確認して作業開始"
+./agent-send.sh worker1 "あなたはworker1です。instructions/worker_task.mdを確認して作業開始"
+./agent-send.sh worker2 "あなたはworker2です。instructions/worker_task.mdを確認して作業開始"  
+./agent-send.sh worker3 "あなたはworker3です。instructions/worker_task.mdを確認して作業開始"
 EOF
 
 # WORKER用指示書生成
