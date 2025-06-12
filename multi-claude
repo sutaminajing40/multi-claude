@@ -6,7 +6,7 @@
 set -e
 
 # バージョン情報
-VERSION="1.0.8"
+VERSION="1.0.9"
 
 # 使用方法表示
 show_usage() {
@@ -18,6 +18,7 @@ show_usage() {
   $0 --exit    - システム完全終了
   $0 --help    - このヘルプを表示
   $0 --version - バージョン情報を表示
+  $0 --dangerously-skip-permissions - 権限確認をスキップして起動
 
 機能:
   起動: tmux環境構築 + ターミナルウィンドウ起動 + Claude Code起動
@@ -91,6 +92,9 @@ EOL
     exit 0
 }
 
+# 権限スキップフラグ
+SKIP_PERMISSIONS=""
+
 # コマンドライン引数処理
 case "${1:-}" in
     --exit)
@@ -103,6 +107,9 @@ case "${1:-}" in
     --version|-v)
         show_version
         exit 0
+        ;;
+    --dangerously-skip-permissions)
+        SKIP_PERMISSIONS="--dangerously-skip-permissions"
         ;;
     "")
         # 通常起動（既存処理）
@@ -267,7 +274,22 @@ log_info "🏗️  tmux環境構築中..."
 
 # setup.shを実行（既存の環境構築）
 if [ -f "./setup.sh" ]; then
-    ./setup.sh
+    ./setup.sh || {
+        log_error "setup.shの実行に失敗しました"
+        exit 1
+    }
+    
+    # tmuxセッション作成の確認
+    sleep 1
+    if ! tmux has-session -t multiagent 2>/dev/null; then
+        log_error "multiagentセッション作成に失敗しました"
+        exit 1
+    fi
+    if ! tmux has-session -t president 2>/dev/null; then
+        log_error "presidentセッション作成に失敗しました"
+        exit 1
+    fi
+    log_info "✅ tmuxセッション作成を確認"
 else
     log_error "setup.shが見つかりません"
     echo "ヒント: multi-claudeを実行するディレクトリにsetup.shが必要です"
@@ -284,31 +306,49 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     TERMINAL_APP="Terminal"
     
     # ウィンドウ1: PRESIDENT（メインウィンドウ）
-    osascript << EOF
+    osascript << EOF 2>/dev/null || {
+        log_error "PRESIDENTウィンドウの起動に失敗しました"
+        echo "手動でターミナルを開いて以下を実行してください:"
+        echo "tmux attach-session -t president"
+        exit 1
+    }
 tell application "$TERMINAL_APP"
     activate
     do script "cd '$CURRENT_DIR' && echo '🎯 PRESIDENT ウィンドウ' && tmux attach-session -t president"
-    delay 0.5
+    delay 1
     set currentWindow to front window
     set currentTab to selected tab of currentWindow
-    tell currentTab
-        set custom title to "Multi-Claude: PRESIDENT"
-    end tell
+    try
+        tell currentTab
+            set custom title to "Multi-Claude: PRESIDENT"
+        end tell
+    on error
+        -- タイトル設定エラーは無視
+    end try
 end tell
 EOF
 
     sleep 2
 
     # ウィンドウ2: MULTIAGENT（サブウィンドウ）
-    osascript << EOF
+    osascript << EOF 2>/dev/null || {
+        log_error "MULTIAGENTウィンドウの起動に失敗しました"
+        echo "手動でターミナルを開いて以下を実行してください:"
+        echo "tmux attach-session -t multiagent"
+        exit 1
+    }
 tell application "$TERMINAL_APP"
     do script "cd '$CURRENT_DIR' && echo '👥 MULTIAGENT ウィンドウ' && tmux attach-session -t multiagent"
-    delay 0.5
+    delay 1
     set currentWindow to front window
     set currentTab to selected tab of currentWindow
-    tell currentTab
-        set custom title to "Multi-Claude: MULTIAGENT"
-    end tell
+    try
+        tell currentTab
+            set custom title to "Multi-Claude: MULTIAGENT"
+        end tell
+    on error
+        -- タイトル設定エラーは無視
+    end try
 end tell
 EOF
 
@@ -336,17 +376,32 @@ fi
 log_success "✅ ターミナルウィンドウ起動完了"
 
 # STEP 4: Claude Code自動起動
-sleep 3
+log_info "⏳ Claude Code起動準備中..."
+sleep 5
 log_info "🤖 Claude Code自動起動中..."
 
 # PRESIDENT起動
-tmux send-keys -t president "$CLAUDE_CMD" C-m
-sleep 2
+log_info "👑 PRESIDENT起動中..."
+if ! tmux send-keys -t president "$CLAUDE_CMD $SKIP_PERMISSIONS" C-m; then
+    log_error "PRESIDENTへのClaude Code起動コマンド送信に失敗"
+    exit 1
+fi
+sleep 3
 
 # MULTIAGENT起動（全ペイン）
 for i in {0..3}; do
-    tmux send-keys -t multiagent:0.$i "$CLAUDE_CMD" C-m
-    sleep 1
+    case $i in
+        0) agent_name="boss1" ;;
+        1) agent_name="worker1" ;;
+        2) agent_name="worker2" ;;
+        3) agent_name="worker3" ;;
+    esac
+    log_info "🤖 $agent_name 起動中..."
+    if ! tmux send-keys -t multiagent:0.$i "$CLAUDE_CMD $SKIP_PERMISSIONS" C-m; then
+        log_error "$agent_name へのClaude Code起動コマンド送信に失敗"
+        exit 1
+    fi
+    sleep 2
 done
 
 log_success "✅ Claude Code起動完了"
