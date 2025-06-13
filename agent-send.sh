@@ -77,6 +77,30 @@ send_message() {
     sleep 0.5
 }
 
+# ワーカーID記録
+record_worker_id() {
+    local agent_name="$1"
+    
+    # ワーカーIDディレクトリ作成
+    mkdir -p ./tmp/worker_ids
+    
+    # ワーカーに送信する際、番号をファイルに記録
+    case "$agent_name" in
+        "worker1") 
+            echo "1" > ./tmp/worker_ids/current_worker.id
+            log_send "system" "worker1のIDを記録: 1"
+            ;;
+        "worker2") 
+            echo "2" > ./tmp/worker_ids/current_worker.id
+            log_send "system" "worker2のIDを記録: 2"
+            ;;
+        "worker3") 
+            echo "3" > ./tmp/worker_ids/current_worker.id
+            log_send "system" "worker3のIDを記録: 3"
+            ;;
+    esac
+}
+
 # ターゲット存在確認
 check_target() {
     local target="$1"
@@ -125,6 +149,9 @@ main() {
     if ! check_target "$target"; then
         exit 1
     fi
+    
+    # ワーカーID記録（worker1,2,3の場合）
+    record_worker_id "$agent_name"
     
     # メッセージ送信
     send_message "$target" "$message"

@@ -17,21 +17,24 @@ cat instructions/worker_task.md
 # 指示書の内容に従って作業実行
 [動的に生成された具体的な作業コマンド]
 
-# 自分のワーカー番号を自動検出
-if [ -n "$TMUX" ]; then
-    PANE_INFO=$(tmux display-message -p '#{session_name}:#{window_index}.#{pane_index}')
-    case "$PANE_INFO" in
-        "multiagent:0.1") WORKER_NUM="1" ;;
-        "multiagent:0.2") WORKER_NUM="2" ;;
-        "multiagent:0.3") WORKER_NUM="3" ;;
-        *) 
-            echo "エラー: 不明なペイン情報: $PANE_INFO"
-            exit 1
-            ;;
-    esac
-    echo "自分はworker${WORKER_NUM}として認識されました（ペイン: $PANE_INFO）"
+# ワーカー番号をファイルから読み込み
+if [ -f ./tmp/worker_ids/current_worker.id ]; then
+    WORKER_NUM=$(cat ./tmp/worker_ids/current_worker.id)
+    echo "自分はworker${WORKER_NUM}として認識されました（IDファイルから読み込み）"
+    
+    # デバッグ情報表示
+    echo "IDファイルの内容: $(cat ./tmp/worker_ids/current_worker.id)"
+    echo "現在のディレクトリ: $(pwd)"
 else
-    echo "エラー: tmux環境外では実行できません"
+    echo "エラー: ワーカー番号が不明です"
+    echo "./tmp/worker_ids/current_worker.idが見つかりません"
+    echo "BOSSからメッセージを受信していない可能性があります"
+    
+    # デバッグ情報
+    echo "現在のディレクトリ: $(pwd)"
+    echo "IDファイルの確認:"
+    ls -la ./tmp/worker_ids/ 2>/dev/null || echo "worker_idsディレクトリが存在しません"
+    
     exit 1
 fi
 

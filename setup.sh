@@ -28,6 +28,10 @@ tmux kill-session -t president 2>/dev/null && log_info "presidentセッション
 mkdir -p ./tmp
 rm -f ./tmp/worker*_done.txt 2>/dev/null && log_info "既存の完了ファイルをクリア" || log_info "完了ファイルは存在しませんでした"
 
+# ワーカーIDディレクトリ作成
+mkdir -p ./tmp/worker_ids
+rm -f ./tmp/worker_ids/*.id 2>/dev/null && log_info "既存のワーカーIDファイルをクリア" || log_info "ワーカーIDファイルは存在しませんでした"
+
 log_success "✅ クリーンアップ完了"
 echo ""
 
