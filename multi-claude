@@ -167,14 +167,37 @@ setup_first_time() {
     mkdir -p ./.multi-claude/bin
     
     # 必要なファイルをコピー
-    if [ -n "$MULTI_CLAUDE_BIN" ] && [ ! -f "./.multi-claude/bin/setup.sh" ]; then
-        log_info "スクリプトファイルをコピー中..."
-        cp "${MULTI_CLAUDE_BIN}/setup.sh" ./.multi-claude/bin/ 2>/dev/null || true
-        cp "${MULTI_CLAUDE_BIN}/agent-send.sh" ./.multi-claude/bin/ 2>/dev/null || true
-        chmod +x ./.multi-claude/bin/setup.sh ./.multi-claude/bin/agent-send.sh 2>/dev/null || true
+    if [ ! -f "./.multi-claude/bin/setup.sh" ] || [ ! -f "./.multi-claude/bin/agent-send.sh" ]; then
+        log_info "スクリプトファイルを配置中..."
         
-        # シンボリックリンクを作成（後方互換性のため）
-        ln -sf ./.multi-claude/bin/setup.sh ./setup.sh 2>/dev/null || true
+        if [ -n "$MULTI_CLAUDE_BIN" ]; then
+            # Homebrewインストールの場合
+            cp "${MULTI_CLAUDE_BIN}/setup.sh" ./.multi-claude/bin/ 2>/dev/null || true
+            cp "${MULTI_CLAUDE_BIN}/agent-send.sh" ./.multi-claude/bin/ 2>/dev/null || true
+        else
+            # ローカル実行の場合（ルートディレクトリにファイルがある場合）
+            if [ -f "./setup.sh" ]; then
+                cp "./setup.sh" ./.multi-claude/bin/
+            fi
+            if [ -f "./agent-send.sh" ]; then
+                cp "./agent-send.sh" ./.multi-claude/bin/
+            fi
+        fi
+        
+        # 実行権限を付与
+        chmod +x ./.multi-claude/bin/setup.sh ./.multi-claude/bin/agent-send.sh 2>/dev/null || true
+    fi
+    
+    # ルートディレクトリのファイルを整理
+    if [ -f "./setup.sh" ] && [ -f "./.multi-claude/bin/setup.sh" ]; then
+        rm -f "./setup.sh"  # 元のファイルを削除
+    fi
+    if [ -f "./agent-send.sh" ] && [ -f "./.multi-claude/bin/agent-send.sh" ]; then
+        rm -f "./agent-send.sh"  # 元のファイルを削除
+    fi
+    
+    # agent-send.shのシンボリックリンクを作成（後方互換性のため）
+    if [ ! -e "./agent-send.sh" ] && [ -f "./.multi-claude/bin/agent-send.sh" ]; then
         ln -sf ./.multi-claude/bin/agent-send.sh ./agent-send.sh 2>/dev/null || true
     fi
     
@@ -226,7 +249,9 @@ setup_first_time() {
 }
 
 # STEP 0: 初回セットアップチェック
-if [ -n "$MULTI_CLAUDE_SHARE" ] && ([ ! -f "./.multi-claude/bin/setup.sh" ] || [ ! -f "./CLAUDE.md" ] || [ ! -d "./.multi-claude/instructions" ]); then
+# Homebrewインストールの場合、またはローカル実行でファイルが正しく配置されていない場合
+if ([ -n "$MULTI_CLAUDE_SHARE" ] && ([ ! -f "./.multi-claude/bin/setup.sh" ] || [ ! -f "./CLAUDE.md" ] || [ ! -d "./.multi-claude/instructions" ])) || \
+   ([ -z "$MULTI_CLAUDE_SHARE" ] && ([ -f "./setup.sh" ] || [ -f "./agent-send.sh" ]) && [ ! -f "./.multi-claude/bin/setup.sh" ]); then
     setup_first_time
 fi
 
