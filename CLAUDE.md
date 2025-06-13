@@ -10,13 +10,13 @@ Multi-Claude Communication Systemは、複数のClaude Codeインスタンスが
 
 ```
 📊 PRESIDENT セッション (1ペイン)
-└── PRESIDENT: プロジェクト統括・指示書生成
+└── PRESIDENT: ユーザー対話・タスク概要伝達
 
 📊 multiagent セッション (4ペイン)  
-├── boss1: チームリーダー・タスク管理
-├── worker1: 実行担当者A
-├── worker2: 実行担当者B
-└── worker3: 実行担当者C
+├── boss1: 要件整理・指示書生成・タスク管理
+├── worker1: 実行担当者A（進捗共有）
+├── worker2: 実行担当者B（進捗共有）
+└── worker3: 実行担当者C（進捗共有）
 
 通信フロー: ユーザー → PRESIDENT → boss1 → workers → boss1 → PRESIDENT
 ```
@@ -31,7 +31,10 @@ Multi-Claude Communication Systemは、複数のClaude Codeインスタンスが
 - **multiagent:0.2** → あなたは **worker2** です
 - **multiagent:0.3** → あなたは **worker3** です
 
-各役割の詳細は `instructions/` ディレクトリの対応するファイルを参照してください。
+各役割の詳細は `.multi-claude/instructions/` ディレクトリの対応するファイルを参照してください：
+- PRESIDENT: `.multi-claude/instructions/president_dynamic.md`
+- boss1: `.multi-claude/instructions/boss_dynamic.md`
+- worker1,2,3: `.multi-claude/instructions/worker_dynamic.md`
 
 ## 開発コマンド
 
@@ -42,8 +45,9 @@ multi-claude                               # システム起動
 multi-claude --exit                        # 完全終了
 multi-claude --dangerously-skip-permissions # 権限確認スキップ起動
 
-# エージェント間通信
+# エージェント間通信（両方対応）
 ./agent-send.sh [エージェント名] "[メッセージ]"
+./.multi-claude/bin/agent-send.sh [エージェント名] "[メッセージ]"
 ./agent-send.sh --list                     # 利用可能エージェント一覧
 ```
 
@@ -63,10 +67,47 @@ tmux attach-session -t president      # presidentセッションにアタッチ
 tmux kill-server                      # 全セッション強制終了
 
 # ログ確認
-cat logs/send_log.txt                 # 全送信ログ
-grep "boss1" logs/send_log.txt        # 特定エージェントのログ
-ls -la ./tmp/worker*_done.txt         # 完了ファイル確認
+cat .multi-claude/logs/send_log.txt              # 全送信ログ
+grep "boss1" .multi-claude/logs/send_log.txt     # 特定エージェントのログ
+ls -la .multi-claude/tmp/worker*_done.txt        # 完了ファイル確認
+ls -la .multi-claude/context/worker*_progress.md # 進捗ファイル確認
 ```
+
+## 改善されたシステム特徴
+
+### 1. 役割分担の最適化
+- **PRESIDENT**: ユーザーとの対話に集中し、タスク概要を素早くBOSSに伝達
+- **BOSS**: 詳細な要件整理と具体的な指示書生成を担当
+- **WORKER**: 進捗を共有しながら効率的に作業を実行
+
+### 2. クリーンなファイル配置
+```
+.multi-claude/
+├── bin/              # 実行スクリプト
+│   ├── setup.sh
+│   └── agent-send.sh
+├── instructions/     # 役割定義・指示書
+│   ├── president_dynamic.md
+│   ├── boss_dynamic.md
+│   ├── worker_dynamic.md
+│   ├── boss_task.md      # 動的生成
+│   └── worker_task.md    # 動的生成
+├── tmp/              # 一時ファイル
+│   ├── worker*_done.txt
+│   └── worker_ids/
+├── logs/             # ログファイル
+│   └── send_log.txt
+├── context/          # 進捗共有
+│   └── worker*_progress.md
+└── tasks/            # タスク管理
+    ├── current_task.md
+    └── completion_report.md
+```
+
+### 3. ワーカー間コンテキスト共有
+- 各ワーカーが進捗を `.multi-claude/context/worker[番号]_progress.md` に記録
+- 作業開始前に他のワーカーの進捗を確認
+- 作業の重複を防ぎ、効率的な協調作業を実現
 
 ## リリースワークフロー
 
@@ -94,31 +135,12 @@ brew update && brew upgrade multi-claude
 ### コマンドラインオプション
 - `--exit`: システム完全終了
 - `--help`: ヘルプ表示
-- `--version`: バージョン情報（現在: v1.0.17）
+- `--version`: バージョン情報（現在: v1.1.0）
 - `--dangerously-skip-permissions`: 権限確認スキップ
 
-### ファイル構成
-```
-./
-├── multi-claude          # メインコマンド
-├── setup.sh              # tmux環境構築
-├── agent-send.sh         # エージェント間通信
-├── instructions/         # 役割定義・タスク指示
-│   ├── president_dynamic.md
-│   ├── boss_dynamic.md
-│   ├── worker_dynamic.md
-│   ├── boss_task.md      # 動的生成
-│   └── worker_task.md    # 動的生成
-├── logs/send_log.txt     # 通信ログ
-└── tmp/                  # 一時ファイル
-```
+### トラブルシューティング
 
-### 動的指示書システム
-PRESIDENTがユーザー要求を解析し、`boss_task.md`と`worker_task.md`を動的生成。各エージェントは役割定義ファイル（`*_dynamic.md`）に従って動作します。
-
-## トラブルシューティング
-
-### Claude Codeが見つからない場合
+#### Claude Codeが見つからない場合
 ```bash
 # 実行ファイル検索
 find "$HOME" -name "claude*" -type f -perm +111 2>/dev/null | grep -E "(bin|\.local|\.claude)"
@@ -127,5 +149,5 @@ find "$HOME" -name "claude*" -type f -perm +111 2>/dev/null | grep -E "(bin|\.lo
 export PATH="$HOME/.claude/local:$PATH"
 ```
 
-### 初回セットアップ
+#### 初回セットアップ
 Homebrewインストール時、初回実行で必要なファイルを自動コピー。既存のCLAUDE.mdがある場合はMulti-Claude設定を追加。

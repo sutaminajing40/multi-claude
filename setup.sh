@@ -25,12 +25,17 @@ tmux kill-session -t multiagent 2>/dev/null && log_info "multiagentセッショ�
 tmux kill-session -t president 2>/dev/null && log_info "presidentセッション削除完了" || log_info "presidentセッションは存在しませんでした"
 
 # 完了ファイルクリア
-mkdir -p ./tmp
-rm -f ./tmp/worker*_done.txt 2>/dev/null && log_info "既存の完了ファイルをクリア" || log_info "完了ファイルは存在しませんでした"
+mkdir -p ./.multi-claude/tmp
+rm -f ./.multi-claude/tmp/worker*_done.txt 2>/dev/null && log_info "既存の完了ファイルをクリア" || log_info "完了ファイルは存在しませんでした"
 
 # ワーカーIDディレクトリ作成
-mkdir -p ./tmp/worker_ids
-rm -f ./tmp/worker_ids/*.id 2>/dev/null && log_info "既存のワーカーIDファイルをクリア" || log_info "ワーカーIDファイルは存在しませんでした"
+mkdir -p ./.multi-claude/tmp/worker_ids
+rm -f ./.multi-claude/tmp/worker_ids/*.id 2>/dev/null && log_info "既存のワーカーIDファイルをクリア" || log_info "ワーカーIDファイルは存在しませんでした"
+
+# コンテキスト共有ディレクトリ作成
+mkdir -p ./.multi-claude/context
+mkdir -p ./.multi-claude/tasks
+mkdir -p ./.multi-claude/logs
 
 log_success "✅ クリーンアップ完了"
 echo ""
@@ -125,9 +130,9 @@ echo "     # 手順2: 認証後、multiagent一括起動"
 echo "     for i in {0..3}; do tmux send-keys -t multiagent:0.\$i 'claude' C-m; done"
 echo ""
 echo "  3. 📜 指示書確認:"
-echo "     PRESIDENT: instructions/president.md"
-echo "     boss1: instructions/boss.md"
-echo "     worker1,2,3: instructions/worker.md"
+echo "     PRESIDENT: .multi-claude/instructions/president_dynamic.md"
+echo "     boss1: .multi-claude/instructions/boss_dynamic.md"
+echo "     worker1,2,3: .multi-claude/instructions/worker_dynamic.md"
 echo "     システム構造: CLAUDE.md"
 echo ""
 echo "  4. 🎯 デモ実行: PRESIDENTに「あなたはpresidentです。指示書に従って」と入力" 

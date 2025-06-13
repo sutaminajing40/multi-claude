@@ -53,8 +53,8 @@ log_send() {
     local message="$2"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     
-    mkdir -p logs
-    echo "[$timestamp] $agent: SENT - \"$message\"" >> logs/send_log.txt
+    mkdir -p ./.multi-claude/logs
+    echo "[$timestamp] $agent: SENT - \"$message\"" >> ./.multi-claude/logs/send_log.txt
 }
 
 # メッセージ送信
@@ -82,20 +82,20 @@ record_worker_id() {
     local agent_name="$1"
     
     # ワーカーIDディレクトリ作成
-    mkdir -p ./tmp/worker_ids
+    mkdir -p ./.multi-claude/tmp/worker_ids
     
     # ワーカーに送信する際、番号をファイルに記録
     case "$agent_name" in
         "worker1") 
-            echo "1" > ./tmp/worker_ids/current_worker.id
+            echo "1" > ./.multi-claude/tmp/worker_ids/current_worker.id
             log_send "system" "worker1のIDを記録: 1"
             ;;
         "worker2") 
-            echo "2" > ./tmp/worker_ids/current_worker.id
+            echo "2" > ./.multi-claude/tmp/worker_ids/current_worker.id
             log_send "system" "worker2のIDを記録: 2"
             ;;
         "worker3") 
-            echo "3" > ./tmp/worker_ids/current_worker.id
+            echo "3" > ./.multi-claude/tmp/worker_ids/current_worker.id
             log_send "system" "worker3のIDを記録: 3"
             ;;
     esac

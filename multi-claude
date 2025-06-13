@@ -6,7 +6,7 @@
 set -e
 
 # バージョン情報
-VERSION="1.0.17"
+VERSION="1.1.0"
 
 # 使用方法表示
 show_usage() {
@@ -69,8 +69,11 @@ exit_system() {
     
     # STEP 2: 一時ファイル削除
     log_info "🧹 一時ファイル削除中..."
-    rm -f ./tmp/worker*_done.txt 2>/dev/null || true
-    rmdir ./tmp 2>/dev/null || true
+    rm -f ./.multi-claude/tmp/worker*_done.txt 2>/dev/null || true
+    rm -rf ./.multi-claude/tmp 2>/dev/null || true
+    rm -rf ./.multi-claude/logs 2>/dev/null || true
+    rm -rf ./.multi-claude/context 2>/dev/null || true
+    rm -rf ./.multi-claude/tasks 2>/dev/null || true
     
     # STEP 3: ターミナルウィンドウ閉鎖（macOSのみ）
     if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -155,12 +158,24 @@ fi
 setup_first_time() {
     log_info "🎯 初回セットアップを実行します..."
     
+    # .multi-claudeディレクトリ作成
+    mkdir -p ./.multi-claude
+    mkdir -p ./.multi-claude/tmp
+    mkdir -p ./.multi-claude/logs
+    mkdir -p ./.multi-claude/context
+    mkdir -p ./.multi-claude/tasks
+    mkdir -p ./.multi-claude/bin
+    
     # 必要なファイルをコピー
-    if [ -n "$MULTI_CLAUDE_BIN" ] && [ ! -f "./setup.sh" ]; then
+    if [ -n "$MULTI_CLAUDE_BIN" ] && [ ! -f "./.multi-claude/bin/setup.sh" ]; then
         log_info "スクリプトファイルをコピー中..."
-        cp "${MULTI_CLAUDE_BIN}/setup.sh" ./ 2>/dev/null || true
-        cp "${MULTI_CLAUDE_BIN}/agent-send.sh" ./ 2>/dev/null || true
-        chmod +x ./setup.sh ./agent-send.sh 2>/dev/null || true
+        cp "${MULTI_CLAUDE_BIN}/setup.sh" ./.multi-claude/bin/ 2>/dev/null || true
+        cp "${MULTI_CLAUDE_BIN}/agent-send.sh" ./.multi-claude/bin/ 2>/dev/null || true
+        chmod +x ./.multi-claude/bin/setup.sh ./.multi-claude/bin/agent-send.sh 2>/dev/null || true
+        
+        # シンボリックリンクを作成（後方互換性のため）
+        ln -sf ./.multi-claude/bin/setup.sh ./setup.sh 2>/dev/null || true
+        ln -sf ./.multi-claude/bin/agent-send.sh ./agent-send.sh 2>/dev/null || true
     fi
     
     # CLAUDE.mdの処理（既存ファイルを保持）
@@ -199,19 +214,19 @@ setup_first_time() {
     fi
     
     # instructionsディレクトリがなければコピー
-    if [ -n "$MULTI_CLAUDE_SHARE" ] && [ ! -d "./instructions" ]; then
+    if [ -n "$MULTI_CLAUDE_SHARE" ] && [ ! -d "./.multi-claude/instructions" ]; then
         log_info "instructionsディレクトリをコピー中..."
-        cp -r "${MULTI_CLAUDE_SHARE}/instructions" ./ 2>/dev/null || true
+        cp -r "${MULTI_CLAUDE_SHARE}/instructions" ./.multi-claude/ 2>/dev/null || true
+        
+        # シンボリックリンクを作成（後方互換性のため）
+        ln -sf ./.multi-claude/instructions ./instructions 2>/dev/null || true
     fi
-    
-    # tmpディレクトリ作成
-    mkdir -p ./tmp
     
     log_success "✅ 初回セットアップ完了"
 }
 
 # STEP 0: 初回セットアップチェック
-if [ -n "$MULTI_CLAUDE_SHARE" ] && ([ ! -f "./setup.sh" ] || [ ! -f "./CLAUDE.md" ] || [ ! -d "./instructions" ]); then
+if [ -n "$MULTI_CLAUDE_SHARE" ] && ([ ! -f "./.multi-claude/bin/setup.sh" ] || [ ! -f "./CLAUDE.md" ] || [ ! -d "./.multi-claude/instructions" ]); then
     setup_first_time
 fi
 
@@ -280,7 +295,13 @@ log_success "✅ 環境チェック完了"
 log_info "🏗️  tmux環境構築中..."
 
 # setup.shを実行（既存の環境構築）
-if [ -f "./setup.sh" ]; then
+if [ -f "./.multi-claude/bin/setup.sh" ]; then
+    ./.multi-claude/bin/setup.sh || {
+        log_error "setup.shの実行に失敗しました"
+        exit 1
+    }
+elif [ -f "./setup.sh" ]; then
+    # 後方互換性のため
     ./setup.sh || {
         log_error "setup.shの実行に失敗しました"
         exit 1
@@ -423,7 +444,10 @@ if [ -n "$DIRECT_MESSAGE" ]; then
     sleep 2
     
     # agent-send.shを使用してメッセージ送信
-    if [ -f "./agent-send.sh" ]; then
+    if [ -f "./.multi-claude/bin/agent-send.sh" ]; then
+        ./.multi-claude/bin/agent-send.sh president "$DIRECT_MESSAGE"
+    elif [ -f "./agent-send.sh" ]; then
+        # 後方互換性のため
         ./agent-send.sh president "$DIRECT_MESSAGE"
         log_success "✅ 指示を送信しました"
         
