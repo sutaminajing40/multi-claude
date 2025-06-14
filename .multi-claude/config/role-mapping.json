@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "mappings": {
+    "president": {
+      "session": "president",
+      "pane_index": 0,
+      "visual_position": "separate",
+      "color": "purple"
+    },
+    "boss1": {
+      "session": "multiagent",
+      "pane_index": 0,
+      "visual_position": "top-left",
+      "color": "red"
+    },
+    "worker1": {
+      "session": "multiagent",
+      "pane_index": 1,
+      "visual_position": "bottom-left",
+      "color": "blue"
+    },
+    "worker2": {
+      "session": "multiagent",
+      "pane_index": 2,
+      "visual_position": "top-right",
+      "color": "blue"
+    },
+    "worker3": {
+      "session": "multiagent",
+      "pane_index": 3,
+      "visual_position": "bottom-right",
+      "color": "blue"
+    }
+  }
+}

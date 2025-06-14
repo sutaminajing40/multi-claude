@@ -37,6 +37,10 @@ mkdir -p ./.multi-claude/context
 mkdir -p ./.multi-claude/tasks
 mkdir -p ./.multi-claude/logs
 
+# 役割判定システム用ディレクトリ作成
+mkdir -p ./.multi-claude/config
+mkdir -p ./.multi-claude/runtime/session-setup
+
 log_success "✅ クリーンアップ完了"
 echo ""
 
@@ -74,6 +78,10 @@ for i in {0..3}; do
     
     # ウェルカムメッセージ
     tmux send-keys -t "multiagent:0.$i" "echo '=== ${PANE_TITLES[$i]} エージェント ==='" C-m
+    
+    # 役割判定システム用の環境変数設定
+    tmux send-keys -t "multiagent:0.$i" "export MULTI_CLAUDE_ROLE='${PANE_TITLES[$i]}'" C-m
+    tmux send-keys -t "multiagent:0.$i" "export MULTI_CLAUDE_SESSION_ID='session-setup'" C-m
 done
 
 log_success "✅ multiagentセッション作成完了"
@@ -88,6 +96,10 @@ tmux send-keys -t president "export PS1='(\[\033[1;35m\]PRESIDENT\[\033[0m\]) \[
 tmux send-keys -t president "echo '=== PRESIDENT セッション ==='" C-m
 tmux send-keys -t president "echo 'プロジェクト統括責任者'" C-m
 tmux send-keys -t president "echo '========================'" C-m
+
+# 役割判定システム用の環境変数設定
+tmux send-keys -t president "export MULTI_CLAUDE_ROLE='president'" C-m
+tmux send-keys -t president "export MULTI_CLAUDE_SESSION_ID='session-setup'" C-m
 
 log_success "✅ presidentセッション作成完了"
 echo ""
@@ -135,4 +147,8 @@ echo "     boss1: .multi-claude/instructions/boss_dynamic.md"
 echo "     worker1,2,3: .multi-claude/instructions/worker_dynamic.md"
 echo "     システム構造: CLAUDE.md"
 echo ""
-echo "  4. 🎯 デモ実行: PRESIDENTに「あなたはpresidentです。指示書に従って」と入力" 
+echo "  4. 🎯 デモ実行: PRESIDENTに「あなたはpresidentです。指示書に従って」と入力"
+echo ""
+echo "  5. 🔍 役割判定システム:"
+echo "     # 各ペインで役割を確認"
+echo "     source .multi-claude/bin/role-detection.sh && get_my_role" 
