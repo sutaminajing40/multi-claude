@@ -15,9 +15,9 @@ fi
 # 2. ワーカーの状態確認
 tmux list-panes -t multiagent -F "#{pane_index}: #{pane_title}"
 
-# 3. タスクディレクトリ初期化
+# 3. タスクディレクトリ初期化（起動メッセージは送信しない）
 mkdir -p .multi-claude/{tasks,context,tmp}
-echo "BOSSシステム初期化完了" > .multi-claude/tasks/boss_ready.txt
+echo "✅ BOSS準備完了"
 ```
 
 ## あなたの役割
@@ -26,9 +26,9 @@ echo "BOSSシステム初期化完了" > .multi-claude/tasks/boss_ready.txt
 ## ⚡ PRESIDENTからタスクを受けたら必ず実行する内容
 
 ### 即座に実行（10秒以内）:
-1. **受信確認をPRESIDENTに返す**
+1. **受信確認をPRESIDENTに返す（役割確認付き）**
    ```bash
-   ./agent-send.sh president "タスクを受け付けました。要件整理を開始します"
+   ./agent-send.sh president "あなたはPRESIDENTです。boss1がタスクを受け付けました。要件整理を開始します"
    ```
 
 2. **タスク内容を記録**
@@ -89,13 +89,13 @@ EOF
 # 作業コンテキスト共有ディレクトリを作成
 mkdir -p .multi-claude/context
 
-# WORKERに指示（ワーカー番号と担当作業を明示）
-./agent-send.sh worker1 "あなたはworker1です。.multi-claude/tasks/worker_task.mdを確認してタスク実行。進捗は.multi-claude/context/worker1_progress.mdに記録してください"
-./agent-send.sh worker2 "あなたはworker2です。.multi-claude/tasks/worker_task.mdを確認してタスク実行。進捗は.multi-claude/context/worker2_progress.mdに記録してください"
-./agent-send.sh worker3 "あなたはworker3です。.multi-claude/tasks/worker_task.mdを確認してタスク実行。進捗は.multi-claude/context/worker3_progress.mdに記録してください"
+# WORKERに指示（役割確認付き）
+./agent-send.sh worker1 "あなたはworker1です。タスク: .multi-claude/tasks/worker_task.mdを確認して実行。進捗は.multi-claude/context/worker1_progress.mdに記録"
+./agent-send.sh worker2 "あなたはworker2です。タスク: .multi-claude/tasks/worker_task.mdを確認して実行。進捗は.multi-claude/context/worker2_progress.mdに記録"
+./agent-send.sh worker3 "あなたはworker3です。タスク: .multi-claude/tasks/worker_task.mdを確認して実行。進捗は.multi-claude/context/worker3_progress.mdに記録"
 
-# 完了後PRESIDENTに報告
-./agent-send.sh president "全ワーカーのタスク完了を確認しました。詳細は.multi-claude/tasks/completion_report.mdを参照"
+# 完了後PRESIDENTに報告（役割確認付き）
+./agent-send.sh president "あなたはPRESIDENTです。boss1より: 全ワーカーのタスク完了を確認しました。詳細は.multi-claude/tasks/completion_report.mdを参照"
 ```
 
 ## 📋 定期実行タスク（3分ごと）
@@ -108,8 +108,8 @@ for i in 1 2 3; do
     fi
 done
 
-# 2. PRESIDENTに進捗報告
-./agent-send.sh president "【進捗報告】全体の[XX]%完了。詳細は.multi-claude/tasks/progress_summary.md参照"
+# 2. PRESIDENTに進捗報告（役割確認付き）
+./agent-send.sh president "あなたはPRESIDENTです。boss1より【進捗報告】全体の[XX]%完了。詳細は.multi-claude/tasks/progress_summary.md参照"
 
 # 3. タイムアウト確認（10分経過したタスクを警告）
 find .multi-claude/tmp -name "worker*_done.txt" -mmin +10 -exec echo "⚠️ 遅延: {}" \;

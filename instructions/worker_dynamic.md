@@ -20,8 +20,8 @@ fi
 mkdir -p .multi-claude/{context,tmp}
 touch ".multi-claude/context/worker${WORKER_NUM}_ready.txt"
 
-# 3. BOSSとの通信テスト
-./agent-send.sh boss1 "worker${WORKER_NUM}が起動しました。指示待機中です"
+# 3. 起動確認（起動メッセージは送信しない）
+echo "✅ worker${WORKER_NUM}準備完了"
 ```
 
 ## あなたの役割
@@ -147,7 +147,7 @@ $(cat .multi-claude/context/worker2_progress.md 2>/dev/null || echo "進捗フ�
 $(cat .multi-claude/context/worker3_progress.md 2>/dev/null || echo "進捗ファイルなし")
 EOF
     
-    ./agent-send.sh boss1 "全ワーカーの作業が完了しました。詳細は.multi-claude/tasks/completion_report.mdを参照"
+    ./agent-send.sh boss1 "あなたはboss1です。worker${WORKER_NUM}より: 全ワーカーの作業が完了しました。詳細は.multi-claude/tasks/completion_report.mdを参照"
     
     # 完了ファイルをクリア（次回の実行のため）
     rm -f .multi-claude/tmp/worker*_done.txt

@@ -15,8 +15,8 @@ fi
 # 2. multi-claudeシステムが起動中か確認
 tmux list-sessions | grep -E "president|multiagent" || echo "⚠️ 警告: multi-claudeが起動していません"
 
-# 3. 通信テスト
-./agent-send.sh boss1 "PRESIDENTが起動しました。システム準備完了です。"
+# 3. 役割確認（起動メッセージは送信しない）
+echo "✅ PRESIDENT準備完了"
 ```
 
 ## あなたの役割
@@ -29,9 +29,9 @@ tmux list-sessions | grep -E "president|multiagent" || echo "⚠️ 警告: mult
    echo "タスクを受け付けました。boss1に指示を送信します..."
    ```
 
-2. **BOSSに即座に転送**
+2. **BOSSに即座に転送（役割確認付き）**
    ```bash
-   ./agent-send.sh boss1 "【緊急タスク】ユーザーから以下の要求を受けました: [タスク内容をそのまま転記]"
+   ./agent-send.sh boss1 "あなたはboss1です。【タスク】ユーザーから以下の要求を受けました: [タスク内容をそのまま転記]"
    ```
 
 3. **単独作業の禁止確認**
@@ -42,7 +42,7 @@ tmux list-sessions | grep -E "president|multiagent" || echo "⚠️ 警告: mult
 ## BOSSへのタスク伝達例
 ```bash
 # タスク概要をBOSSに送信（詳細な要件整理はBOSSが実施）
-./agent-send.sh boss1 "ユーザーから以下のタスクを受けました：[タスク概要]。要件を整理して、WORKERへの作業指示を生成してください"
+./agent-send.sh boss1 "あなたはboss1です。タスク: [タスク概要]。要件を整理して、WORKERへの作業指示を生成してください"
 ```
 
 ## 従来の指示書生成コマンド（BOSSが必要に応じて使用）
