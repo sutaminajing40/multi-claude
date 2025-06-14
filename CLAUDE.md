@@ -151,3 +151,26 @@ export PATH="$HOME/.claude/local:$PATH"
 
 #### 初回セットアップ
 Homebrewインストール時、初回実行で必要なファイルを自動コピー。既存のCLAUDE.mdがある場合はMulti-Claude設定を追加。
+
+## 開発作業完了時の注意事項
+
+### こまめなプッシュの推奨
+作業が完了したら、こまめにプッシュすることを推奨します：
+```bash
+git add .
+git commit -m "feat: 機能の説明"
+git push origin main
+```
+
+### 自動brewアップデート
+Gitタグをプッシュすると、GitHub Actionsが自動的にHomebrewのFormulaを更新します：
+```bash
+# バージョンタグの作成とプッシュ
+git tag v1.X.X -m "Release: 変更内容の説明"
+git push origin v1.X.X
+
+# 約15-18秒後に自動的にHomebrewで利用可能
+brew update && brew upgrade multi-claude
+```
+
+これにより、新機能や修正を素早くリリースし、ユーザーが最新版を利用できるようになります。

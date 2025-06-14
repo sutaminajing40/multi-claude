@@ -196,10 +196,7 @@ setup_first_time() {
         rm -f "./agent-send.sh"  # 元のファイルを削除
     fi
     
-    # agent-send.shのシンボリックリンクを作成（後方互換性のため）
-    if [ ! -e "./agent-send.sh" ] && [ -f "./.multi-claude/bin/agent-send.sh" ]; then
-        ln -sf ./.multi-claude/bin/agent-send.sh ./agent-send.sh 2>/dev/null || true
-    fi
+    # agent-send.shのシンボリックリンクは作成しない（.multi-claude/bin/のみ使用）
     
     # CLAUDE.mdの処理（既存ファイルを保持）
     if [ -n "$MULTI_CLAUDE_SHARE" ]; then
@@ -237,12 +234,15 @@ setup_first_time() {
     fi
     
     # instructionsディレクトリがなければコピー
-    if [ -n "$MULTI_CLAUDE_SHARE" ] && [ ! -d "./.multi-claude/instructions" ]; then
+    if [ ! -d "./.multi-claude/instructions" ]; then
         log_info "instructionsディレクトリをコピー中..."
-        cp -r "${MULTI_CLAUDE_SHARE}/instructions" ./.multi-claude/ 2>/dev/null || true
         
-        # シンボリックリンクを作成（後方互換性のため）
-        ln -sf ./.multi-claude/instructions ./instructions 2>/dev/null || true
+        # ローカルのinstructionsディレクトリを優先
+        if [ -d "./instructions" ]; then
+            cp -r "./instructions" ./.multi-claude/ 2>/dev/null || true
+        elif [ -n "$MULTI_CLAUDE_SHARE" ] && [ -d "${MULTI_CLAUDE_SHARE}/instructions" ]; then
+            cp -r "${MULTI_CLAUDE_SHARE}/instructions" ./.multi-claude/ 2>/dev/null || true
+        fi
     fi
     
     log_success "✅ 初回セットアップ完了"
