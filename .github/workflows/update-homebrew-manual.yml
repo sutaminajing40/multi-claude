@@ -15,7 +15,7 @@ jobs:
       - name: Calculate SHA256
         id: sha256
         run: |
-          TARBALL_URL="https://github.com/sutaminajing40/Claude-Code-Communication/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz"
+          TARBALL_URL="https://github.com/sutaminajing40/multi-claude/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz"
           SHA256=$(curl -sL "$TARBALL_URL" | sha256sum | cut -d' ' -f1)
           
           echo "TARBALL_URL=$TARBALL_URL" >> $GITHUB_OUTPUT

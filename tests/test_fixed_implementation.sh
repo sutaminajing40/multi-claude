@@ -11,7 +11,7 @@ echo "Running multi-claude with minimal env..."
 echo ""
 
 env -i HOME="$HOME" PATH="/usr/local/bin:/usr/bin:/bin" bash -c '
-cd /Users/iguchihiroto/dev/Claude-Code-Communication
+cd /Users/iguchihiroto/dev/multi-claude
 echo "Current PATH: $PATH"
 echo ""
 
@@ -54,7 +54,7 @@ echo "TEST 2: Actual multi-claude script test"
 echo ""
 
 # 実際のmulti-claudeスクリプトが動作するかチェック（ヘルプ表示のみ）
-if /Users/iguchihiroto/dev/Claude-Code-Communication/multi-claude --help >/dev/null 2>&1; then
+if /Users/iguchihiroto/dev/multi-claude/multi-claude --help >/dev/null 2>&1; then
     echo "✅ multi-claude --help executes successfully"
 else
     echo "❌ multi-claude --help failed"

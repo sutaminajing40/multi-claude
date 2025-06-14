@@ -10,11 +10,11 @@ mkdir -p "$TEST_DIR"
 cd "$TEST_DIR"
 
 # multi-claudeスクリプトをコピー
-cp "$HOME/dev/Claude-Code-Communication/multi-claude" .
+cp "$HOME/dev/multi-claude/multi-claude" .
 
 # setup.shとagent-send.shもコピー（現在の状態を再現）
-cp "$HOME/dev/Claude-Code-Communication/setup.sh" .
-cp "$HOME/dev/Claude-Code-Communication/agent-send.sh" .
+cp "$HOME/dev/multi-claude/setup.sh" .
+cp "$HOME/dev/multi-claude/agent-send.sh" .
 
 # テスト1: 初回実行時に.multi-claude/bin/ディレクトリが作成される
 echo -n "Test 1: .multi-claude/bin/ directory creation... "
