@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+# 🚨 重要: Multi-Claude システムの使用が必須です
+
+**注意: このプロジェクトでは、すべてのタスクでMulti-Claude システムの使用が必須です。単独での作業は禁止されています。**
+
+## 必須事項チェックリスト
+- [ ] multi-claudeが起動していることを確認 (`tmux list-sessions`で確認)
+- [ ] 自分の役割を確認 (PRESIDENT/boss1/worker1-3)
+- [ ] タスク受信時は必ず他のエージェントと連携
+- [ ] 単独でコード変更を行わない
+- [ ] 必ず動的指示書を生成・確認してから作業開始
+
 # 🤖 Multi-Claude システム
 
 Multi-Claude Communication Systemは、複数のClaude Codeインスタンスがtmuxセッション内で協調動作し、タスクを分散処理するマルチエージェントシステムです。
@@ -21,8 +32,9 @@ Multi-Claude Communication Systemは、複数のClaude Codeインスタンスが
 通信フロー: ユーザー → PRESIDENT → boss1 → workers → boss1 → PRESIDENT
 ```
 
-## あなたの役割
+## あなたの役割とアクションフロー
 
+### 役割の自動判定
 このシステムでは、あなたがどのtmuxペインで実行されているかによって役割が決まります：
 
 - **president:0** → あなたは **PRESIDENT** です
@@ -30,6 +42,34 @@ Multi-Claude Communication Systemは、複数のClaude Codeインスタンスが
 - **multiagent:0.1** → あなたは **worker1** です
 - **multiagent:0.2** → あなたは **worker2** です
 - **multiagent:0.3** → あなたは **worker3** です
+
+### 起動時の必須アクション
+1. **役割確認**: `echo $TMUX_PANE`で自分の役割を確認
+2. **システム状態確認**: `tmux list-sessions`でmulti-claudeが起動中か確認
+3. **指示書確認**: 自分の役割に応じた指示書を必ず読み込む
+   ```bash
+   # PRESIDENTの場合
+   cat .multi-claude/instructions/president_dynamic.md
+   
+   # boss1の場合
+   cat .multi-claude/instructions/boss_dynamic.md
+   
+   # worker1-3の場合
+   cat .multi-claude/instructions/worker_dynamic.md
+   ```
+
+### タスク受信時の必須フロー
+1. **PRESIDENTがユーザーからタスクを受けた場合**:
+   - 必ず動的指示書を生成してboss1に送信
+   - 単独でコード変更は行わない
+   
+2. **boss1がタスクを受けた場合**:
+   - 必ず指示書を読み込んでからworkerに指示
+   - 自分で実装は行わない
+   
+3. **workerがタスクを受けた場合**:
+   - 必ず指示書を確認してから作業開始
+   - 進捗を必ず共有ファイルに記録
 
 各役割の詳細は `.multi-claude/instructions/` ディレクトリの対応するファイルを参照してください：
 - PRESIDENT: `.multi-claude/instructions/president_dynamic.md`
@@ -71,6 +111,10 @@ cat .multi-claude/logs/send_log.txt              # 全送信ログ
 grep "boss1" .multi-claude/logs/send_log.txt     # 特定エージェントのログ
 ls -la .multi-claude/tmp/worker*_done.txt        # 完了ファイル確認
 ls -la .multi-claude/context/worker*_progress.md # 進捗ファイル確認
+
+# ヘルスチェック（新機能）
+./.multi-claude/bin/health-check.sh        # システム状態確認
+./.multi-claude/bin/health-check.sh --watch # 定期監視モード（5分間隔）
 ```
 
 ## 改善されたシステム特徴

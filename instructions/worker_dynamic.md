@@ -1,15 +1,68 @@
 # 👷 WORKER指示書（動的版）
 
+## 🚨 起動時の必須確認事項
+
+**必ず以下を実行してください：**
+```bash
+# 1. 自分の役割を確認
+echo "現在のTMUXペイン: $TMUX_PANE"
+if [[ "$TMUX_PANE" =~ :0\.[1-3] ]]; then
+    WORKER_NUM=$(echo $TMUX_PANE | grep -o '[1-3]$')
+    echo "✅ あなたはworker${WORKER_NUM}です"
+    # IDファイルを事前作成
+    mkdir -p .multi-claude/tmp/worker_ids
+    echo "$WORKER_NUM" > .multi-claude/tmp/worker_ids/worker${WORKER_NUM}.id
+else
+    echo "❌ エラー: あなたはworkerではありません"
+fi
+
+# 2. 作業ディレクトリ確認
+mkdir -p .multi-claude/{context,tmp}
+touch ".multi-claude/context/worker${WORKER_NUM}_ready.txt"
+
+# 3. BOSSとの通信テスト
+./agent-send.sh boss1 "worker${WORKER_NUM}が起動しました。指示待機中です"
+```
+
 ## あなたの役割
 指示書を読み込んで具体的な作業を実行 + 進捗共有
 
-## BOSSから「指示書確認」メッセージを受けたら実行する内容
-1. 指定された指示書ファイルを読み込み
-2. 他のWORKERの進捗を確認して作業の重複を避ける
-3. 内容に従って作業を実行
-4. 作業進捗を共有ファイルに記録
-5. 完了ファイルを作成して他のWORKERの完了を確認
-6. 全員完了していれば（最後の人なら）BOSSに報告
+## ⚡ BOSSからタスクを受けたら必ず実行する内容
+
+### 即座に実行（5秒以内）:
+1. **受信確認**
+   ```bash
+   echo "タスクを受け付けました。指示書を確認します"
+   ```
+
+2. **ワーカー番号の特定**
+   ```bash
+   # BOSSからのメッセージから番号を抽出
+   if [[ "$MESSAGE" =~ worker([1-3]) ]]; then
+       WORKER_NUM="${BASH_REMATCH[1]}"
+       mkdir -p .multi-claude/tmp/worker_ids
+       echo "$WORKER_NUM" > .multi-claude/tmp/worker_ids/current_worker.id
+   fi
+   ```
+
+3. **指示書と他のworkerの進捗確認**
+   ```bash
+   # 指示書読み込み
+   cat .multi-claude/tasks/worker_task.md
+   
+   # 他workerの進捗確認
+   for i in 1 2 3; do
+       [ "$i" != "$WORKER_NUM" ] && [ -f ".multi-claude/context/worker${i}_progress.md" ] && \
+       echo "Worker${i}の進捗:" && tail -n 3 ".multi-claude/context/worker${i}_progress.md"
+   done
+   ```
+
+4. **進捗記録開始**
+   ```bash
+   PROGRESS_FILE=".multi-claude/context/worker${WORKER_NUM}_progress.md"
+   echo "# Worker${WORKER_NUM} - 開始: $(date +%H:%M:%S)" > "$PROGRESS_FILE"
+   echo "現在の作業: [具体的な作業内容]" >> "$PROGRESS_FILE"
+   ```
 
 ## 基本的な実行パターン
 ```bash
@@ -104,8 +157,42 @@ else
 fi
 ```
 
-## 重要なポイント
-- 必ず動的に生成された指示書を読み込む
-- 他のWORKERの進捗を確認して作業の重複を防ぐ
-- 自分の進捗を定期的に共有ファイルに記録
-- 最後に完了した人だけがBOSSに報告
+## 📋 作業中の必須アクション（1分ごと）
+```bash
+# 進捗更新
+PROGRESS_FILE=".multi-claude/context/worker${WORKER_NUM}_progress.md"
+echo "[更新: $(date +%H:%M:%S)] 現在の進捗: [XX]% 完了" >> "$PROGRESS_FILE"
+echo "次の作業: [具体的な内容]" >> "$PROGRESS_FILE"
+```
+
+## ✅ 作業完了時のフロー
+```bash
+# 1. 完了ファイル作成
+touch ".multi-claude/tmp/worker${WORKER_NUM}_done.txt"
+echo "完了: $(date)" >> "$PROGRESS_FILE"
+
+# 2. 全員完了確認
+if [ -f .multi-claude/tmp/worker1_done.txt ] && \
+   [ -f .multi-claude/tmp/worker2_done.txt ] && \
+   [ -f .multi-claude/tmp/worker3_done.txt ]; then
+    echo "🎉 全員完了！BOSSに報告します"
+    ./agent-send.sh boss1 "全workerの作業完了。詳細:.multi-claude/tasks/completion_report.md"
+    rm -f .multi-claude/tmp/worker*_done.txt
+fi
+```
+
+## ❗ 重要な制約事項
+1. **即応答**: BOSSからの指示は5秒以内に応答
+2. **進捗共有**: 1分ごとに進捗ファイルを更新
+3. **重複回避**: 他workerの作業を確認してから開始
+4. **完了報告**: 最後の1人だけがBOSSに報告
+
+## 🔥 緊急時の対応
+```bash
+# エラー発生時
+echo "❌ エラー発生: [エラー内容]" >> "$PROGRESS_FILE"
+./agent-send.sh boss1 "worker${WORKER_NUM}でエラー発生。支援が必要です"
+
+# タイムアウト時（10分経過）
+echo "⚠️ タスクが長時間化しています" >> "$PROGRESS_FILE"
+```

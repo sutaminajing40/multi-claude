@@ -445,7 +445,7 @@ fi
 
 log_success "✅ ターミナルウィンドウ起動完了"
 
-# STEP 4: Claude Code自動起動
+# STEP 4: Claude Code自動起動と初期タスク確認
 log_info "⏳ Claude Code起動準備中..."
 sleep 5
 log_info "🤖 Claude Code自動起動中..."
@@ -475,6 +475,35 @@ for i in {0..3}; do
 done
 
 log_success "✅ Claude Code起動完了"
+
+# STEP 4.5: システム起動確認とタスクチェック
+log_info "🔄 システム起動確認中..."
+sleep 3
+
+# 各エージェントに起動確認メッセージを送信
+log_info "📡 エージェント間通信テスト中..."
+
+# システム起動確認ファイルを作成
+mkdir -p ./.multi-claude/tasks
+echo "Multi-Claude System Started at $(date)" > ./.multi-claude/tasks/system_status.txt
+
+# 前回のタスク状態をチェック
+if [ -f "./.multi-claude/tasks/current_task.md" ]; then
+    log_info "📋 前回の未完了タスクを検出しました"
+    echo ""
+    echo "===== 未完了タスク ====="
+    head -5 ./.multi-claude/tasks/current_task.md
+    echo "========================"
+    echo ""
+    
+    # PRESIDENTに未完了タスクの確認を促す
+    sleep 2
+    if [ -f "./.multi-claude/bin/agent-send.sh" ]; then
+        ./.multi-claude/bin/agent-send.sh president "システムが起動しました。前回の未完了タスクがあります。.multi-claude/tasks/current_task.mdを確認してください。"
+    fi
+fi
+
+log_success "✅ システム起動確認完了"
 
 # STEP 5: 直接指示の送信（オプション）
 if [ -n "$DIRECT_MESSAGE" ]; then
