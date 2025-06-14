@@ -167,13 +167,14 @@ setup_first_time() {
     mkdir -p ./.multi-claude/bin
     
     # 必要なファイルをコピー
-    if [ ! -f "./.multi-claude/bin/setup.sh" ] || [ ! -f "./.multi-claude/bin/agent-send.sh" ]; then
+    if [ ! -f "./.multi-claude/bin/setup.sh" ] || [ ! -f "./.multi-claude/bin/agent-send.sh" ] || [ ! -f "./.multi-claude/bin/health-check.sh" ]; then
         log_info "スクリプトファイルを配置中..."
         
         if [ -n "$MULTI_CLAUDE_BIN" ]; then
             # Homebrewインストールの場合
             cp "${MULTI_CLAUDE_BIN}/setup.sh" ./.multi-claude/bin/ 2>/dev/null || true
             cp "${MULTI_CLAUDE_BIN}/agent-send.sh" ./.multi-claude/bin/ 2>/dev/null || true
+            cp "${MULTI_CLAUDE_BIN}/health-check.sh" ./.multi-claude/bin/ 2>/dev/null || true
         else
             # ローカル実行の場合（ルートディレクトリにファイルがある場合）
             if [ -f "./setup.sh" ]; then
@@ -182,10 +183,13 @@ setup_first_time() {
             if [ -f "./agent-send.sh" ]; then
                 cp "./agent-send.sh" ./.multi-claude/bin/
             fi
+            if [ -f "./health-check.sh" ]; then
+                cp "./health-check.sh" ./.multi-claude/bin/
+            fi
         fi
         
         # 実行権限を付与
-        chmod +x ./.multi-claude/bin/setup.sh ./.multi-claude/bin/agent-send.sh 2>/dev/null || true
+        chmod +x ./.multi-claude/bin/setup.sh ./.multi-claude/bin/agent-send.sh ./.multi-claude/bin/health-check.sh 2>/dev/null || true
     fi
     
     # ルートディレクトリのファイルを整理
@@ -260,11 +264,13 @@ setup_first_time() {
 # STEP 0: 初回セットアップチェック
 # Homebrewインストールの場合、またはローカル実行でファイルが正しく配置されていない場合
 # または、instructionsディレクトリが空の場合
+# または、health-check.shが存在しない場合
 if ([ -n "$MULTI_CLAUDE_SHARE" ] && ([ ! -f "./.multi-claude/bin/setup.sh" ] || [ ! -f "./CLAUDE.md" ] || [ ! -d "./.multi-claude/instructions" ])) || \
    ([ -z "$MULTI_CLAUDE_SHARE" ] && ([ -f "./setup.sh" ] || [ -f "./agent-send.sh" ]) && [ ! -f "./.multi-claude/bin/setup.sh" ]) || \
    [ ! -f "./.multi-claude/instructions/president_dynamic.md" ] || \
    [ ! -f "./.multi-claude/instructions/boss_dynamic.md" ] || \
-   [ ! -f "./.multi-claude/instructions/worker_dynamic.md" ]; then
+   [ ! -f "./.multi-claude/instructions/worker_dynamic.md" ] || \
+   [ ! -f "./.multi-claude/bin/health-check.sh" ]; then
     setup_first_time
 fi
 
