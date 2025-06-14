@@ -233,9 +233,15 @@ setup_first_time() {
         fi
     fi
     
-    # instructionsディレクトリがなければコピー
-    if [ ! -d "./.multi-claude/instructions" ]; then
+    # instructionsディレクトリが存在しないか、必要なファイルが不足している場合はコピー
+    if [ ! -d "./.multi-claude/instructions" ] || \
+       [ ! -f "./.multi-claude/instructions/president_dynamic.md" ] || \
+       [ ! -f "./.multi-claude/instructions/boss_dynamic.md" ] || \
+       [ ! -f "./.multi-claude/instructions/worker_dynamic.md" ]; then
         log_info "instructionsディレクトリをコピー中..."
+        
+        # 既存のディレクトリがある場合は削除
+        rm -rf ./.multi-claude/instructions 2>/dev/null || true
         
         # ローカルのinstructionsディレクトリを優先
         if [ -d "./instructions" ]; then
@@ -250,8 +256,12 @@ setup_first_time() {
 
 # STEP 0: 初回セットアップチェック
 # Homebrewインストールの場合、またはローカル実行でファイルが正しく配置されていない場合
+# または、instructionsディレクトリが空の場合
 if ([ -n "$MULTI_CLAUDE_SHARE" ] && ([ ! -f "./.multi-claude/bin/setup.sh" ] || [ ! -f "./CLAUDE.md" ] || [ ! -d "./.multi-claude/instructions" ])) || \
-   ([ -z "$MULTI_CLAUDE_SHARE" ] && ([ -f "./setup.sh" ] || [ -f "./agent-send.sh" ]) && [ ! -f "./.multi-claude/bin/setup.sh" ]); then
+   ([ -z "$MULTI_CLAUDE_SHARE" ] && ([ -f "./setup.sh" ] || [ -f "./agent-send.sh" ]) && [ ! -f "./.multi-claude/bin/setup.sh" ]) || \
+   [ ! -f "./.multi-claude/instructions/president_dynamic.md" ] || \
+   [ ! -f "./.multi-claude/instructions/boss_dynamic.md" ] || \
+   [ ! -f "./.multi-claude/instructions/worker_dynamic.md" ]; then
     setup_first_time
 fi
 
