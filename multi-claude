@@ -243,8 +243,11 @@ setup_first_time() {
         # 既存のディレクトリがある場合は削除
         rm -rf ./.multi-claude/instructions 2>/dev/null || true
         
-        # ローカルのinstructionsディレクトリを優先
-        if [ -d "./instructions" ]; then
+        # ローカルのinstructionsディレクトリを優先（ただし必要なファイルが存在する場合のみ）
+        if [ -d "./instructions" ] && \
+           [ -f "./instructions/president_dynamic.md" ] && \
+           [ -f "./instructions/boss_dynamic.md" ] && \
+           [ -f "./instructions/worker_dynamic.md" ]; then
             cp -r "./instructions" ./.multi-claude/ 2>/dev/null || true
         elif [ -n "$MULTI_CLAUDE_SHARE" ] && [ -d "${MULTI_CLAUDE_SHARE}/instructions" ]; then
             cp -r "${MULTI_CLAUDE_SHARE}/instructions" ./.multi-claude/ 2>/dev/null || true
