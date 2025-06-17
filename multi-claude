@@ -370,41 +370,15 @@ else
 fi
 
 # STEP 3: ターミナルウィンドウ起動
-log_info "💻 ターミナルウィンドウ起動中..."
+log_info "💻 MULTIAGENTターミナルウィンドウ起動中..."
 
 # OSの検出
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
     TERMINAL_APP="Terminal"
     
-    # ウィンドウ1: PRESIDENT（メインウィンドウ）
-    osascript << EOF 2>/dev/null
-tell application "$TERMINAL_APP"
-    activate
-    do script "cd '$CURRENT_DIR' && echo '🎯 PRESIDENT ウィンドウ' && tmux attach-session -t president"
-    delay 1
-    set currentWindow to front window
-    set currentTab to selected tab of currentWindow
-    try
-        tell currentTab
-            set custom title to "Multi-Claude: PRESIDENT"
-        end tell
-    on error
-        -- タイトル設定エラーは無視
-    end try
-end tell
-EOF
-    
-    if [ $? -ne 0 ]; then
-        log_error "PRESIDENTウィンドウの起動に失敗しました"
-        echo "手動でターミナルを開いて以下を実行してください:"
-        echo "tmux attach-session -t president"
-        exit 1
-    fi
-
-    sleep 2
-
-    # ウィンドウ2: MULTIAGENT（サブウィンドウ）
+    # MULTIAGENT用ターミナルのみ作成
+    # PRESIDENT用は現在のターミナルを使用
     osascript << EOF 2>/dev/null
 tell application "$TERMINAL_APP"
     do script "cd '$CURRENT_DIR' && echo '👥 MULTIAGENT ウィンドウ' && tmux attach-session -t multiagent"
@@ -429,16 +403,12 @@ EOF
     fi
 
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    # Linux
+    # Linux - MULTIAGENT用ターミナルのみ作成
     if command -v gnome-terminal &> /dev/null; then
         # GNOME Terminal
-        gnome-terminal --title="Multi-Claude: PRESIDENT" -- bash -c "cd '$CURRENT_DIR' && echo '🎯 PRESIDENT ウィンドウ' && tmux attach-session -t president; exec bash" &
-        sleep 2
         gnome-terminal --title="Multi-Claude: MULTIAGENT" -- bash -c "cd '$CURRENT_DIR' && echo '👥 MULTIAGENT ウィンドウ' && tmux attach-session -t multiagent; exec bash" &
     elif command -v xterm &> /dev/null; then
         # xterm
-        xterm -title "Multi-Claude: PRESIDENT" -e "cd '$CURRENT_DIR' && echo '🎯 PRESIDENT ウィンドウ' && tmux attach-session -t president" &
-        sleep 2
         xterm -title "Multi-Claude: MULTIAGENT" -e "cd '$CURRENT_DIR' && echo '👥 MULTIAGENT ウィンドウ' && tmux attach-session -t multiagent" &
     else
         log_error "対応するターミナルが見つかりません"
@@ -449,20 +419,12 @@ else
     exit 1
 fi
 
-log_success "✅ ターミナルウィンドウ起動完了"
+log_success "✅ MULTIAGENTターミナルウィンドウ起動完了"
 
 # STEP 4: Claude Code自動起動と初期タスク確認
 log_info "⏳ Claude Code起動準備中..."
-sleep 5
-log_info "🤖 Claude Code自動起動中..."
-
-# PRESIDENT起動
-log_info "👑 PRESIDENT起動中..."
-if ! tmux send-keys -t president "$CLAUDE_CMD $SKIP_PERMISSIONS" C-m; then
-    log_error "PRESIDENTへのClaude Code起動コマンド送信に失敗"
-    exit 1
-fi
 sleep 3
+log_info "🤖 Claude Code自動起動中..."
 
 # MULTIAGENT起動（全ペイン）
 for i in {0..3}; do
@@ -540,7 +502,7 @@ else
     echo "=================================="
     echo ""
     echo "📋 使用方法:"
-    echo "  1. 🎯 PRESIDENTウィンドウ: メインの対話窓口"
+    echo "  1. 🎯 現在のターミナル: PRESIDENT（メインの対話窓口）"
     echo "  2. 👥 MULTIAGENTウィンドウ: BOSS+WORKERs監視用"
     echo ""
     echo "💬 PRESIDENTに話しかけてタスクを依頼してください："
@@ -554,12 +516,11 @@ else
     echo "  再起動: multi-claude"
     echo ""
     
-    # 自動的にPRESIDENTセッションにアタッチ
-    echo "🔍 PRESIDENTセッションに自動接続中..."
-    echo "   セッションを抜けるには: Ctrl+B → D"
-    echo "   MULTIAGENTウィンドウを確認するには別ターミナルで: tmux attach-session -t multiagent"
-    sleep 3
+    # 現在のターミナルでPRESIDENT用Claude Codeを起動
+    echo "🤖 現在のターミナルでPRESIDENT用Claude Codeを起動中..."
+    echo "   MULTIAGENTウィンドウは別ウィンドウで監視可能です"
+    sleep 2
     
-    # PRESIDENTセッションにアタッチ
-    tmux attach-session -t president
+    # 現在のターミナルでClaude Codeを起動
+    exec "$CLAUDE_CMD" $SKIP_PERMISSIONS
 fi
