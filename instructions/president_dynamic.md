@@ -6,10 +6,12 @@
 ```bash
 # 1. 自分の役割を確認
 echo "現在のTMUXペイン: $TMUX_PANE"
-if [[ "$TMUX_PANE" == *":0"* ]]; then
+SESSION_INFO=$(tmux list-panes -F "#{session_name}:#{pane_index} #{pane_id}" 2>/dev/null)
+SESSION_AND_PANE=$(echo "$SESSION_INFO" | grep "$TMUX_PANE" | awk '{print $1}')
+if [[ "$SESSION_AND_PANE" == "president:0" ]]; then
     echo "✅ あなたはPRESIDENTです"
 else
-    echo "❌ エラー: あなたはPRESIDENTではありません"
+    echo "❌ エラー: あなたはPRESIDENTではありません (実際: $SESSION_AND_PANE)"
 fi
 
 # 2. multi-claudeシステムが起動中か確認

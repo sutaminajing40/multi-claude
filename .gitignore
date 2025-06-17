@@ -29,3 +29,5 @@ coverage/
 # パッケージング
 dist/
 build/
+
+devflow.md

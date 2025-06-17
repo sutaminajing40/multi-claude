@@ -6,15 +6,30 @@
 ```bash
 # 1. 自分の役割を確認
 echo "現在のTMUXペイン: $TMUX_PANE"
-if [[ "$TMUX_PANE" =~ :0\.[1-3] ]]; then
-    WORKER_NUM=$(echo $TMUX_PANE | grep -o '[1-3]$')
-    echo "✅ あなたはworker${WORKER_NUM}です"
-    # IDファイルを事前作成
-    mkdir -p .multi-claude/tmp/worker_ids
-    echo "$WORKER_NUM" > .multi-claude/tmp/worker_ids/worker${WORKER_NUM}.id
-else
-    echo "❌ エラー: あなたはworkerではありません"
-fi
+SESSION_INFO=$(tmux list-panes -F "#{session_name}:#{pane_index} #{pane_id}" 2>/dev/null)
+SESSION_AND_PANE=$(echo "$SESSION_INFO" | grep "$TMUX_PANE" | awk '{print $1}')
+case "$SESSION_AND_PANE" in
+    "multiagent:1")
+        WORKER_NUM=1
+        echo "✅ あなたはworker1です"
+        ;;
+    "multiagent:2")
+        WORKER_NUM=2
+        echo "✅ あなたはworker2です"
+        ;;
+    "multiagent:3")
+        WORKER_NUM=3
+        echo "✅ あなたはworker3です"
+        ;;
+    *)
+        echo "❌ エラー: あなたはworkerではありません (実際: $SESSION_AND_PANE)"
+        exit 1
+        ;;
+esac
+
+# IDファイルを事前作成
+mkdir -p .multi-claude/tmp/worker_ids
+echo "$WORKER_NUM" > .multi-claude/tmp/worker_ids/worker${WORKER_NUM}.id
 
 # 2. 作業ディレクトリ確認
 mkdir -p .multi-claude/{context,tmp}
