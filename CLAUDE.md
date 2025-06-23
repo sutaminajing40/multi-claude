@@ -90,11 +90,10 @@ Multi-Claude Communication Systemは、複数のClaude Codeインスタンスが
    - 必ず指示書を確認してから作業開始
    - 進捗を必ず共有ファイルに記録
 
-各役割の詳細は `$MULTI_CLAUDE_GLOBAL/instructions/` ディレクトリの対応するファイルを参照してください：
-- PRESIDENT: `$MULTI_CLAUDE_GLOBAL/instructions/president_dynamic.md`
-- boss1: `$MULTI_CLAUDE_GLOBAL/instructions/boss_dynamic.md`
-- worker1,2,3: `$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.md`
-注: MULTI_CLAUDE_GLOBAL は multi-claude 起動時に自動設定されます
+各役割の詳細は `.multi-claude/instructions/` ディレクトリの対応するファイルを参照してください：
+- PRESIDENT: `.multi-claude/instructions/president_dynamic.md`
+- boss1: `.multi-claude/instructions/boss_dynamic.md`
+- worker1,2,3: `.multi-claude/instructions/worker_dynamic.md`
 
 ## 環境変数
 
@@ -174,7 +173,7 @@ $HOME/.multi-claude/
 │   ├── setup.sh
 │   ├── agent-send.sh
 │   └── health-check.sh
-├── instructions/     # 役割定義・指示書テンプレート（共有）
+├── instructions/     # 指示書テンプレート（初回コピー元）
 │   ├── president_dynamic.md
 │   ├── boss_dynamic.md
 │   └── worker_dynamic.md
@@ -185,6 +184,10 @@ $HOME/.multi-claude/
 **ローカル（プロジェクトの.multi-claude/）** - プロジェクト固有
 ```
 .multi-claude/
+├── instructions/     # 役割定義・指示書（プロジェクト固有）
+│   ├── president_dynamic.md
+│   ├── boss_dynamic.md
+│   └── worker_dynamic.md
 ├── session/          # セッション固有データ
 │   ├── tmp/          # 一時ファイル
 │   │   ├── worker*_done.txt

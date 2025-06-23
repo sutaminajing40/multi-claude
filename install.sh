@@ -118,10 +118,11 @@ Multi-Claudeは、複数のClaude Codeインスタンスが協調して動作す
 - **boss1** (multiagent:0.0): チームリーダー + 要件整理・指示書生成
 - **worker1,2,3** (multiagent:0.1-3): 実行担当 + 進捗共有
 
-## あなたの役割（動的版）
-- **PRESIDENT**: @instructions/president_dynamic.md
-- **boss1**: @instructions/boss_dynamic.md  
-- **worker1,2,3**: @instructions/worker_dynamic.md
+### あなたの役割（動的版）
+
+- **PRESIDENT**: @.multi-claude/instructions/president_dynamic.md
+- **boss1**: @.multi-claude/instructions/boss_dynamic.md
+- **worker1,2,3**: @.multi-claude/instructions/worker_dynamic.md
 
 ## メッセージ送信
 ```bash

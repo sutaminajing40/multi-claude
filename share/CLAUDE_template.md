@@ -21,9 +21,9 @@ Multi-Claudeは、複数のClaude Codeインスタンスが協調して動作す
 
 ### あなたの役割（動的版）
 
-- **PRESIDENT**: @$MULTI_CLAUDE_GLOBAL/instructions/president_dynamic.md
-- **boss1**: @$MULTI_CLAUDE_GLOBAL/instructions/boss_dynamic.md
-- **worker1,2,3**: @$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.md
+- **PRESIDENT**: @.multi-claude/instructions/president_dynamic.md
+- **boss1**: @.multi-claude/instructions/boss_dynamic.md
+- **worker1,2,3**: @.multi-claude/instructions/worker_dynamic.md
 
 ### メッセージ送信
 
@@ -56,6 +56,10 @@ $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh [相手] "[メッセージ]"
 
 ```
 .multi-claude/
+├── instructions/     # 役割定義・指示書（プロジェクト固有）
+│   ├── president_dynamic.md  # カスタマイズ可能
+│   ├── boss_dynamic.md       # カスタマイズ可能
+│   └── worker_dynamic.md     # カスタマイズ可能
 ├── session/          # セッション固有データ
 │   ├── tmp/          # 一時ファイル（ワーカー完了状態など）
 │   ├── logs/         # 通信ログ
@@ -66,6 +70,8 @@ $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh [相手] "[メッセージ]"
 │   └── completion_report.md # 完了レポート
 └── config/           # プロジェクト設定
 ```
+
+**注**: 指示書ファイルは初回起動時にグローバルからコピーされます。プロジェクト固有の要件に合わせて自由に編集できます。
 
 ## クイックコマンドリファレンス
 

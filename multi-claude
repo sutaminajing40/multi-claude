@@ -225,6 +225,7 @@ setup_first_time() {
     mkdir -p ./.multi-claude/context
     mkdir -p ./.multi-claude/tasks
     mkdir -p ./.multi-claude/config
+    mkdir -p ./.multi-claude/instructions
     
     # CLAUDE.mdの処理（既存ファイルを保持）
     CLAUDE_TEMPLATE_PATH=""
@@ -282,6 +283,17 @@ setup_first_time() {
         log_info "  検索パス:"
         log_info "  - $HOME/.multi-claude/share/CLAUDE_template.md"
         log_info "  - $MULTI_CLAUDE_GLOBAL/share/CLAUDE_template.md"
+    fi
+    
+    # 指示書ファイルをローカルにコピー
+    log_info "指示書ファイルをローカルにコピー中..."
+    if [ -d "$MULTI_CLAUDE_GLOBAL/instructions" ]; then
+        cp "$MULTI_CLAUDE_GLOBAL/instructions/president_dynamic.md" ./.multi-claude/instructions/ 2>/dev/null || true
+        cp "$MULTI_CLAUDE_GLOBAL/instructions/boss_dynamic.md" ./.multi-claude/instructions/ 2>/dev/null || true
+        cp "$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.md" ./.multi-claude/instructions/ 2>/dev/null || true
+        log_success "✅ 指示書ファイルをコピーしました"
+    else
+        log_error "グローバル指示書ディレクトリが見つかりません: $MULTI_CLAUDE_GLOBAL/instructions"
     fi
     
     log_success "✅ 初回セットアップ完了"
@@ -544,10 +556,10 @@ log_success "✅ Claude Code起動完了"
 log_info "⏳ Claude Codeの起動を待機中..."
 sleep 5  # Claude Codeが完全に起動するまで待機
 log_info "🤖 エージェントに役割を認識させています..."
-tmux send-keys -t multiagent:0.0 "あなたはboss1です。CLAUDE.mdと$MULTI_CLAUDE_GLOBAL/instructions/boss_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
-tmux send-keys -t multiagent:0.1 "あなたはworker1です。CLAUDE.mdと$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
-tmux send-keys -t multiagent:0.2 "あなたはworker2です。CLAUDE.mdと$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
-tmux send-keys -t multiagent:0.3 "あなたはworker3です。CLAUDE.mdと$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.0 "あなたはboss1です。CLAUDE.mdと.multi-claude/instructions/boss_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.1 "あなたはworker1です。CLAUDE.mdと.multi-claude/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.2 "あなたはworker2です。CLAUDE.mdと.multi-claude/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.3 "あなたはworker3です。CLAUDE.mdと.multi-claude/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
 
 # STEP 4.5: システム起動確認とタスクチェック
 log_info "🔄 システム起動確認中..."
@@ -635,7 +647,7 @@ else
     
     # CLAUDE.mdの存在を確認するメッセージを送信（起動完了後）
     sleep 5  # Claude Codeが完全に起動するまで待機
-    tmux send-keys -t president:0 "あなたはPRESIDENTです。まず、CLAUDE.mdと$MULTI_CLAUDE_GLOBAL/instructions/president_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+    tmux send-keys -t president:0 "あなたはPRESIDENTです。まず、CLAUDE.mdと.multi-claude/instructions/president_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
     
     # PRESIDENT用ターミナルを別タブで起動
     if [ "$TERMINAL_APP" = "iTerm" ]; then
