@@ -14,11 +14,12 @@ show_usage() {
 🤖 Multi-Claude システム
 
 使用方法:
-  $0           - システム起動
+  $0           - システム起動（通常モード）
   $0 --exit    - システム完全終了
   $0 --help    - このヘルプを表示
   $0 --version - バージョン情報を表示
-  $0 --dangerously-skip-permissions - 権限確認をスキップして起動
+  $0 --dangerously-skip-permissions - 権限確認をスキップして起動（Claudeに--dangerously-skip-permissionsを付与）
+  $0 --reset-terminal - ターミナル設定をリセット
   $0 "[指示]"  - PRESIDENTに直接指示を送信
 
 機能:
@@ -78,7 +79,37 @@ exit_system() {
     # STEP 3: ターミナルウィンドウ閉鎖（macOSのみ）
     if [[ "$OSTYPE" == "darwin"* ]]; then
         log_info "🪟 ターミナルウィンドウ閉鎖中..."
-        osascript << 'EOL' 2>/dev/null || true
+        # 設定されたターミナルアプリのセッション閉鎖
+        CONFIG_DIR="$HOME/.multi-claude"
+        CONFIG_FILE="$CONFIG_DIR/config"
+        
+        # 設定を読み込み
+        if [ -f "$CONFIG_FILE" ]; then
+            source "$CONFIG_FILE"
+        fi
+        
+        if [ "$TERMINAL_APP" = "iTerm" ]; then
+            # iTerm2のセッション閉鎖
+            osascript << 'EOL' 2>/dev/null || true
+tell application "iTerm2"
+    repeat with w in windows
+        tell w
+            repeat with t in tabs
+                tell t
+                    repeat with s in sessions
+                        if name of s contains "Multi-Claude" then
+                            close s
+                        end if
+                    end repeat
+                end tell
+            end repeat
+        end tell
+    end repeat
+end tell
+EOL
+        else
+            # 標準ターミナルの閉鎖
+            osascript << 'EOL' 2>/dev/null || true
 tell application "Terminal"
     repeat with w in windows
         repeat with t in tabs of w
@@ -89,6 +120,7 @@ tell application "Terminal"
     end repeat
 end tell
 EOL
+        fi
     fi
     
     log_success "✅ Multi-Claude システム完全終了"
@@ -112,6 +144,19 @@ case "${1:-}" in
         ;;
     --version|-v)
         show_version
+        exit 0
+        ;;
+    --reset-terminal)
+        # ターミナル設定をリセット
+        CONFIG_DIR="$HOME/.multi-claude"
+        CONFIG_FILE="$CONFIG_DIR/config"
+        if [ -f "$CONFIG_FILE" ]; then
+            rm "$CONFIG_FILE"
+            log_success "✓ ターミナル設定をリセットしました"
+            echo "次回起動時にターミナルを選択できます。"
+        else
+            log_info "ターミナル設定はまだ保存されていません"
+        fi
         exit 0
         ;;
     --dangerously-skip-permissions)
@@ -154,56 +199,42 @@ else
     MULTI_CLAUDE_SHARE=""
 fi
 
+# グローバルパス設定（早期に設定）
+if [ -n "$MULTI_CLAUDE_BASE" ] && [ -d "$MULTI_CLAUDE_BASE" ]; then
+    # Homebrewインストールの場合
+    export MULTI_CLAUDE_GLOBAL="$MULTI_CLAUDE_BASE"
+elif [ -d "$HOME/.multi-claude" ]; then
+    # install.shインストールの場合
+    export MULTI_CLAUDE_GLOBAL="$HOME/.multi-claude"
+else
+    # ローカル実行の場合
+    export MULTI_CLAUDE_GLOBAL="$(pwd)"
+fi
+
+# ローカルパス設定
+export MULTI_CLAUDE_LOCAL="$(pwd)/.multi-claude"
+
 # 初回セットアップ関数
 setup_first_time() {
     log_info "🎯 初回セットアップを実行します..."
     
-    # .multi-claudeディレクトリ作成
-    mkdir -p ./.multi-claude
-    mkdir -p ./.multi-claude/tmp
-    mkdir -p ./.multi-claude/logs
+    # ローカルディレクトリ作成（プロジェクト固有データ用）
+    mkdir -p ./.multi-claude/session/tmp
+    mkdir -p ./.multi-claude/session/logs
+    mkdir -p ./.multi-claude/session/runtime
     mkdir -p ./.multi-claude/context
     mkdir -p ./.multi-claude/tasks
-    mkdir -p ./.multi-claude/bin
-    
-    # 必要なファイルをコピー
-    if [ ! -f "./.multi-claude/bin/setup.sh" ] || [ ! -f "./.multi-claude/bin/agent-send.sh" ] || [ ! -f "./.multi-claude/bin/health-check.sh" ]; then
-        log_info "スクリプトファイルを配置中..."
-        
-        if [ -n "$MULTI_CLAUDE_BIN" ]; then
-            # Homebrewインストールの場合
-            cp "${MULTI_CLAUDE_BIN}/setup.sh" ./.multi-claude/bin/ 2>/dev/null || true
-            cp "${MULTI_CLAUDE_BIN}/agent-send.sh" ./.multi-claude/bin/ 2>/dev/null || true
-            cp "${MULTI_CLAUDE_BIN}/health-check.sh" ./.multi-claude/bin/ 2>/dev/null || true
-        else
-            # ローカル実行の場合（ルートディレクトリにファイルがある場合）
-            if [ -f "./setup.sh" ]; then
-                cp "./setup.sh" ./.multi-claude/bin/
-            fi
-            if [ -f "./agent-send.sh" ]; then
-                cp "./agent-send.sh" ./.multi-claude/bin/
-            fi
-            if [ -f "./health-check.sh" ]; then
-                cp "./health-check.sh" ./.multi-claude/bin/
-            fi
-        fi
-        
-        # 実行権限を付与
-        chmod +x ./.multi-claude/bin/setup.sh ./.multi-claude/bin/agent-send.sh ./.multi-claude/bin/health-check.sh 2>/dev/null || true
-    fi
-    
-    # ルートディレクトリのファイルを整理
-    if [ -f "./setup.sh" ] && [ -f "./.multi-claude/bin/setup.sh" ]; then
-        rm -f "./setup.sh"  # 元のファイルを削除
-    fi
-    if [ -f "./agent-send.sh" ] && [ -f "./.multi-claude/bin/agent-send.sh" ]; then
-        rm -f "./agent-send.sh"  # 元のファイルを削除
-    fi
-    
-    # agent-send.shのシンボリックリンクは作成しない（.multi-claude/bin/のみ使用）
+    mkdir -p ./.multi-claude/config
     
     # CLAUDE.mdの処理（既存ファイルを保持）
+    CLAUDE_TEMPLATE_PATH=""
     if [ -n "$MULTI_CLAUDE_SHARE" ]; then
+        CLAUDE_TEMPLATE_PATH="${MULTI_CLAUDE_SHARE}/CLAUDE_template.md"
+    elif [ -f "$HOME/.multi-claude/CLAUDE_template.md" ]; then
+        CLAUDE_TEMPLATE_PATH="$HOME/.multi-claude/CLAUDE_template.md"
+    fi
+    
+    if [ -n "$CLAUDE_TEMPLATE_PATH" ]; then
         if [ -f "./CLAUDE.md" ]; then
             # 既存のCLAUDE.mdがある場合、Multi-Claudeシステム設定を追加
             log_info "既存のCLAUDE.mdにMulti-Claudeシステム設定を追加中..."
@@ -214,7 +245,7 @@ setup_first_time() {
                 cp "./CLAUDE.md" "./CLAUDE.md.original"
                 
                 # Multi-Claudeシステム設定を先頭に追加
-                cp "${MULTI_CLAUDE_SHARE}/CLAUDE_template.md" "./CLAUDE.md.tmp"
+                cp "$CLAUDE_TEMPLATE_PATH" "./CLAUDE.md.tmp"
                 echo "" >> "./CLAUDE.md.tmp"
                 echo "---" >> "./CLAUDE.md.tmp"
                 echo "" >> "./CLAUDE.md.tmp"
@@ -233,28 +264,7 @@ setup_first_time() {
         else
             # CLAUDE.mdがない場合は新規作成
             log_info "CLAUDE.mdを作成中..."
-            cp "${MULTI_CLAUDE_SHARE}/CLAUDE_template.md" "./CLAUDE.md" 2>/dev/null || true
-        fi
-    fi
-    
-    # instructionsディレクトリが存在しないか、必要なファイルが不足している場合はコピー
-    if [ ! -d "./.multi-claude/instructions" ] || \
-       [ ! -f "./.multi-claude/instructions/president_dynamic.md" ] || \
-       [ ! -f "./.multi-claude/instructions/boss_dynamic.md" ] || \
-       [ ! -f "./.multi-claude/instructions/worker_dynamic.md" ]; then
-        log_info "instructionsディレクトリをコピー中..."
-        
-        # 既存のディレクトリがある場合は削除
-        rm -rf ./.multi-claude/instructions 2>/dev/null || true
-        
-        # ローカルのinstructionsディレクトリを優先（ただし必要なファイルが存在する場合のみ）
-        if [ -d "./instructions" ] && \
-           [ -f "./instructions/president_dynamic.md" ] && \
-           [ -f "./instructions/boss_dynamic.md" ] && \
-           [ -f "./instructions/worker_dynamic.md" ]; then
-            cp -r "./instructions" ./.multi-claude/ 2>/dev/null || true
-        elif [ -n "$MULTI_CLAUDE_SHARE" ] && [ -d "${MULTI_CLAUDE_SHARE}/instructions" ]; then
-            cp -r "${MULTI_CLAUDE_SHARE}/instructions" ./.multi-claude/ 2>/dev/null || true
+            cp "$CLAUDE_TEMPLATE_PATH" "./CLAUDE.md" 2>/dev/null || true
         fi
     fi
     
@@ -262,15 +272,8 @@ setup_first_time() {
 }
 
 # STEP 0: 初回セットアップチェック
-# Homebrewインストールの場合、またはローカル実行でファイルが正しく配置されていない場合
-# または、instructionsディレクトリが空の場合
-# または、health-check.shが存在しない場合
-if ([ -n "$MULTI_CLAUDE_SHARE" ] && ([ ! -f "./.multi-claude/bin/setup.sh" ] || [ ! -f "./CLAUDE.md" ] || [ ! -d "./.multi-claude/instructions" ])) || \
-   ([ -z "$MULTI_CLAUDE_SHARE" ] && ([ -f "./setup.sh" ] || [ -f "./agent-send.sh" ]) && [ ! -f "./.multi-claude/bin/setup.sh" ]) || \
-   [ ! -f "./.multi-claude/instructions/president_dynamic.md" ] || \
-   [ ! -f "./.multi-claude/instructions/boss_dynamic.md" ] || \
-   [ ! -f "./.multi-claude/instructions/worker_dynamic.md" ] || \
-   [ ! -f "./.multi-claude/bin/health-check.sh" ]; then
+# ローカルディレクトリが存在しない場合のみセットアップ
+if [ ! -d "./.multi-claude/session" ] || [ ! -f "./CLAUDE.md" ]; then
     setup_first_time
 fi
 
@@ -338,49 +341,117 @@ log_success "✅ 環境チェック完了"
 # STEP 2: tmux環境構築
 log_info "🏗️  tmux環境構築中..."
 
-# setup.shを実行（既存の環境構築）
-if [ -f "./.multi-claude/bin/setup.sh" ]; then
-    ./.multi-claude/bin/setup.sh || {
-        log_error "setup.shの実行に失敗しました"
-        exit 1
-    }
+# グローバルパスからsetup.shを実行
+SETUP_SCRIPT=""
+if [ -f "$MULTI_CLAUDE_GLOBAL/bin/setup.sh" ]; then
+    SETUP_SCRIPT="$MULTI_CLAUDE_GLOBAL/bin/setup.sh"
+elif [ -f "$MULTI_CLAUDE_GLOBAL/setup.sh" ]; then
+    SETUP_SCRIPT="$MULTI_CLAUDE_GLOBAL/setup.sh"
 elif [ -f "./setup.sh" ]; then
-    # 後方互換性のため
-    ./setup.sh || {
-        log_error "setup.shの実行に失敗しました"
-        exit 1
-    }
-    
-    # tmuxセッション作成の確認
-    sleep 1
-    if ! tmux has-session -t multiagent 2>/dev/null; then
-        log_error "multiagentセッション作成に失敗しました"
-        exit 1
-    fi
-    if ! tmux has-session -t president 2>/dev/null; then
-        log_error "presidentセッション作成に失敗しました"
-        exit 1
-    fi
-    log_info "✅ tmuxセッション作成を確認"
+    # ローカル実行の場合
+    SETUP_SCRIPT="./setup.sh"
 else
     log_error "setup.shが見つかりません"
-    echo "ヒント: multi-claudeを実行するディレクトリにsetup.shが必要です"
-    echo "Homebrewでインストールした場合は、初回実行時に自動でコピーされます"
+    echo "インストールが正しく完了していない可能性があります"
     exit 1
 fi
+
+# setup.sh実行
+$SETUP_SCRIPT || {
+    log_error "setup.shの実行に失敗しました"
+    exit 1
+}
+
+# tmuxセッション作成の確認
+sleep 1
+if ! tmux has-session -t multiagent 2>/dev/null; then
+    log_error "multiagentセッション作成に失敗しました"
+    exit 1
+fi
+if ! tmux has-session -t president 2>/dev/null; then
+    log_error "presidentセッション作成に失敗しました"
+    exit 1
+fi
+log_info "✅ tmuxセッション作成を確認"
 
 # STEP 3: ターミナルウィンドウ起動
 log_info "💻 MULTIAGENTターミナルウィンドウ起動中..."
 
+# 設定ファイルのパス
+CONFIG_DIR="$HOME/.multi-claude"
+CONFIG_FILE="$CONFIG_DIR/config"
+
+# 設定ディレクトリが存在しない場合は作成
+if [ ! -d "$CONFIG_DIR" ]; then
+    mkdir -p "$CONFIG_DIR"
+fi
+
+# ターミナルアプリの設定を読み込み
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+fi
+
 # OSの検出
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
-    TERMINAL_APP="Terminal"
+    # ターミナルアプリが設定されていない場合は選択を促す
+    if [ -z "$TERMINAL_APP" ]; then
+        echo ""
+        echo "🖥  使用するターミナルアプリを選択してください:"
+        echo "1) Terminal (標準ターミナル)"
+        echo "2) iTerm2"
+        echo ""
+        read -p "選択 (1 または 2): " choice
+        
+        case $choice in
+            1)
+                TERMINAL_APP="Terminal"
+                ;;
+            2)
+                # iTerm2がインストールされているか確認
+                if osascript -e 'tell application "System Events" to name of application processes' 2>/dev/null | grep -q "iTerm"; then
+                    TERMINAL_APP="iTerm"
+                else
+                    echo ""
+                    log_error "iTerm2がインストールされていません。標準ターミナルを使用します。"
+                    TERMINAL_APP="Terminal"
+                    sleep 2
+                fi
+                ;;
+            *)
+                echo "無効な選択です。標準ターミナルを使用します。"
+                TERMINAL_APP="Terminal"
+                ;;
+        esac
+        
+        # 設定を保存
+        echo "TERMINAL_APP=\"$TERMINAL_APP\"" > "$CONFIG_FILE"
+        echo ""
+        log_success "設定を保存しました: $TERMINAL_APP"
+        echo ""
+    fi
     
     # MULTIAGENT用ターミナルのみ作成
     # PRESIDENT用は現在のターミナルを使用
-    osascript << EOF 2>/dev/null
-tell application "$TERMINAL_APP"
+    if [ "$TERMINAL_APP" = "iTerm" ]; then
+        # iTerm2を使用 - 新しいタブで開く
+        osascript << EOF 2>/dev/null
+tell application "iTerm"
+    tell current window
+        create tab with default profile
+        tell current tab
+            tell current session
+                write text "cd '$CURRENT_DIR' && echo '👥 MULTIAGENT ウィンドウ' && tmux attach-session -t multiagent"
+                set name to "Multi-Claude: MULTIAGENT"
+            end tell
+        end tell
+    end tell
+end tell
+EOF
+    else
+        # 標準ターミナルを使用
+        osascript << EOF 2>/dev/null
+tell application "Terminal"
     do script "cd '$CURRENT_DIR' && echo '👥 MULTIAGENT ウィンドウ' && tmux attach-session -t multiagent"
     delay 1
     set currentWindow to front window
@@ -394,6 +465,7 @@ tell application "$TERMINAL_APP"
     end try
 end tell
 EOF
+    fi
     
     if [ $? -ne 0 ]; then
         log_error "MULTIAGENTウィンドウの起動に失敗しました"
@@ -421,6 +493,11 @@ fi
 
 log_success "✅ MULTIAGENTターミナルウィンドウ起動完了"
 
+# STEP 3.5: 環境変数確認
+log_info "🔧 環境変数設定完了..."
+log_info "  MULTI_CLAUDE_GLOBAL: $MULTI_CLAUDE_GLOBAL"
+log_info "  MULTI_CLAUDE_LOCAL: $MULTI_CLAUDE_LOCAL"
+
 # STEP 4: Claude Code自動起動と初期タスク確認
 log_info "⏳ Claude Code起動準備中..."
 sleep 3
@@ -435,6 +512,9 @@ for i in {0..3}; do
         3) agent_name="worker3" ;;
     esac
     log_info "🤖 $agent_name 起動中..."
+    # 環境変数を設定してからClaude Codeを起動
+    tmux send-keys -t multiagent:0.$i "export MULTI_CLAUDE_LOCAL='$MULTI_CLAUDE_LOCAL'" C-m
+    tmux send-keys -t multiagent:0.$i "export MULTI_CLAUDE_GLOBAL='$MULTI_CLAUDE_GLOBAL'" C-m
     if ! tmux send-keys -t multiagent:0.$i "$CLAUDE_CMD $SKIP_PERMISSIONS" C-m; then
         log_error "$agent_name へのClaude Code起動コマンド送信に失敗"
         exit 1
@@ -466,8 +546,10 @@ if [ -f "./.multi-claude/tasks/current_task.md" ]; then
     
     # PRESIDENTに未完了タスクの確認を促す
     sleep 2
-    if [ -f "./.multi-claude/bin/agent-send.sh" ]; then
-        ./.multi-claude/bin/agent-send.sh president "システムが起動しました。前回の未完了タスクがあります。.multi-claude/tasks/current_task.mdを確認してください。"
+    if [ -f "$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh" ]; then
+        $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "システムが起動しました。前回の未完了タスクがあります。.multi-claude/tasks/current_task.mdを確認してください。"
+    elif [ -f "$MULTI_CLAUDE_GLOBAL/agent-send.sh" ]; then
+        $MULTI_CLAUDE_GLOBAL/agent-send.sh president "システムが起動しました。前回の未完了タスクがあります。.multi-claude/tasks/current_task.mdを確認してください。"
     fi
 fi
 
@@ -479,23 +561,23 @@ if [ -n "$DIRECT_MESSAGE" ]; then
     sleep 2
     
     # agent-send.shを使用してメッセージ送信
-    if [ -f "./.multi-claude/bin/agent-send.sh" ]; then
-        ./.multi-claude/bin/agent-send.sh president "$DIRECT_MESSAGE"
-    elif [ -f "./agent-send.sh" ]; then
-        # 後方互換性のため
-        ./agent-send.sh president "$DIRECT_MESSAGE"
-        log_success "✅ 指示を送信しました"
-        
-        # PRESIDENTセッションにアタッチ
-        echo ""
-        echo "🔍 PRESIDENTセッションに接続中..."
-        echo "   終了するには: Ctrl+B → D"
-        sleep 2
-        tmux attach-session -t president
+    if [ -f "$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh" ]; then
+        $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "$DIRECT_MESSAGE"
+    elif [ -f "$MULTI_CLAUDE_GLOBAL/agent-send.sh" ]; then
+        $MULTI_CLAUDE_GLOBAL/agent-send.sh president "$DIRECT_MESSAGE"
     else
         log_error "agent-send.shが見つかりません"
         exit 1
     fi
+    
+    log_success "✅ 指示を送信しました"
+    
+    # PRESIDENTセッションにアタッチ
+    echo ""
+    echo "🔍 PRESIDENTセッションに接続中..."
+    echo "   終了するには: Ctrl+B → D"
+    sleep 2
+    tmux attach-session -t president
 else
     echo ""
     echo "🎉 Multi-Claude システム起動完了！"
@@ -516,11 +598,17 @@ else
     echo "  再起動: multi-claude"
     echo ""
     
-    # 現在のターミナルでPRESIDENT用Claude Codeを起動
-    echo "🤖 現在のターミナルでPRESIDENT用Claude Codeを起動中..."
+    # PRESIDENTセッションにアタッチしてClaude Codeを起動
+    echo "🤖 PRESIDENTセッションに接続してClaude Codeを起動中..."
     echo "   MULTIAGENTウィンドウは別ウィンドウで監視可能です"
     sleep 2
     
-    # 現在のターミナルでClaude Codeを起動
-    exec "$CLAUDE_CMD" $SKIP_PERMISSIONS
+    # presidentセッションで環境変数を設定してClaude Codeを起動
+    tmux send-keys -t president:0 "export MULTI_CLAUDE_LOCAL='$MULTI_CLAUDE_LOCAL'" C-m
+    tmux send-keys -t president:0 "export MULTI_CLAUDE_GLOBAL='$MULTI_CLAUDE_GLOBAL'" C-m
+    tmux send-keys -t president:0 "$CLAUDE_CMD $SKIP_PERMISSIONS" C-m
+    sleep 2
+    
+    # presidentセッションにアタッチ
+    exec tmux attach-session -t president
 fi

@@ -162,7 +162,7 @@ $(cat .multi-claude/context/worker2_progress.md 2>/dev/null || echo "進捗フ�
 $(cat .multi-claude/context/worker3_progress.md 2>/dev/null || echo "進捗ファイルなし")
 EOF
     
-    ./agent-send.sh boss1 "あなたはboss1です。worker${WORKER_NUM}より: 全ワーカーの作業が完了しました。詳細は.multi-claude/tasks/completion_report.mdを参照"
+    $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "あなたはboss1です。worker${WORKER_NUM}より: 全ワーカーの作業が完了しました。詳細は.multi-claude/tasks/completion_report.mdを参照"
     
     # 完了ファイルをクリア（次回の実行のため）
     rm -f .multi-claude/tmp/worker*_done.txt
@@ -191,7 +191,7 @@ if [ -f .multi-claude/tmp/worker1_done.txt ] && \
    [ -f .multi-claude/tmp/worker2_done.txt ] && \
    [ -f .multi-claude/tmp/worker3_done.txt ]; then
     echo "🎉 全員完了！BOSSに報告します"
-    ./agent-send.sh boss1 "全workerの作業完了。詳細:.multi-claude/tasks/completion_report.md"
+    $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "全workerの作業完了。詳細:.multi-claude/tasks/completion_report.md"
     rm -f .multi-claude/tmp/worker*_done.txt
 fi
 ```
@@ -206,7 +206,7 @@ fi
 ```bash
 # エラー発生時
 echo "❌ エラー発生: [エラー内容]" >> "$PROGRESS_FILE"
-./agent-send.sh boss1 "worker${WORKER_NUM}でエラー発生。支援が必要です"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "worker${WORKER_NUM}でエラー発生。支援が必要です"
 
 # タイムアウト時（10分経過）
 echo "⚠️ タスクが長時間化しています" >> "$PROGRESS_FILE"

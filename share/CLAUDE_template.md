@@ -10,17 +10,16 @@
 
 ### あなたの役割（動的版）
 
-- **PRESIDENT**: @.multi-claude/instructions/president_dynamic.md
-- **boss1**: @.multi-claude/instructions/boss_dynamic.md
-- **worker1,2,3**: @.multi-claude/instructions/worker_dynamic.md
+- **PRESIDENT**: @$MULTI_CLAUDE_GLOBAL/instructions/president_dynamic.md
+- **boss1**: @$MULTI_CLAUDE_GLOBAL/instructions/boss_dynamic.md
+- **worker1,2,3**: @$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.md
 
 ### メッセージ送信
 
 ```bash
-# プロジェクトルートから実行（後方互換性のため両方対応）
-./agent-send.sh [相手] "[メッセージ]"
-# または
-./.multi-claude/bin/agent-send.sh [相手] "[メッセージ]"
+# プロジェクトルートから実行
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh [相手] "[メッセージ]"
+# 注: MULTI_CLAUDE_GLOBAL は multi-claude 起動時に自動設定されます
 ```
 
 ### 新しい基本フロー

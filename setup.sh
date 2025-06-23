@@ -21,25 +21,30 @@ echo ""
 # STEP 1: 既存セッションクリーンアップ
 log_info "🧹 既存セッションクリーンアップ開始..."
 
+# 既存のセッションを強制的に削除
 tmux kill-session -t multiagent 2>/dev/null && log_info "multiagentセッション削除完了" || log_info "multiagentセッションは存在しませんでした"
 tmux kill-session -t president 2>/dev/null && log_info "presidentセッション削除完了" || log_info "presidentセッションは存在しませんでした"
 
-# 完了ファイルクリア
-mkdir -p ./.multi-claude/tmp
-rm -f ./.multi-claude/tmp/worker*_done.txt 2>/dev/null && log_info "既存の完了ファイルをクリア" || log_info "完了ファイルは存在しませんでした"
+# 既存のtmuxプロセスが完全に終了するまで待機
+sleep 0.5
 
-# ワーカーIDディレクトリ作成
-mkdir -p ./.multi-claude/tmp/worker_ids
-rm -f ./.multi-claude/tmp/worker_ids/*.id 2>/dev/null && log_info "既存のワーカーIDファイルをクリア" || log_info "ワーカーIDファイルは存在しませんでした"
-
-# コンテキスト共有ディレクトリ作成
+# ローカルディレクトリ作成（プロジェクト固有データ用）
+mkdir -p ./.multi-claude/session/tmp
+mkdir -p ./.multi-claude/session/logs
+mkdir -p ./.multi-claude/session/runtime
 mkdir -p ./.multi-claude/context
 mkdir -p ./.multi-claude/tasks
-mkdir -p ./.multi-claude/logs
+mkdir -p ./.multi-claude/config
+
+# 完了ファイルクリア
+rm -f ./.multi-claude/session/tmp/worker*_done.txt 2>/dev/null && log_info "既存の完了ファイルをクリア" || log_info "完了ファイルは存在しませんでした"
+
+# ワーカーIDディレクトリ作成
+mkdir -p ./.multi-claude/session/tmp/worker_ids
+rm -f ./.multi-claude/session/tmp/worker_ids/*.id 2>/dev/null && log_info "既存のワーカーIDファイルをクリア" || log_info "ワーカーIDファイルは存在しませんでした"
 
 # 役割判定システム用ディレクトリ作成
-mkdir -p ./.multi-claude/config
-mkdir -p ./.multi-claude/runtime/session-setup
+mkdir -p ./.multi-claude/session/runtime/session-setup
 
 log_success "✅ クリーンアップ完了"
 echo ""
@@ -67,14 +72,8 @@ for i in {0..3}; do
     # 作業ディレクトリ設定
     tmux send-keys -t "multiagent:0.$i" "cd $(pwd)" C-m
     
-    # カラープロンプト設定
-    if [ $i -eq 0 ]; then
-        # boss1: 赤色
-        tmux send-keys -t "multiagent:0.$i" "export PS1='(\[\033[1;31m\]${PANE_TITLES[$i]}\[\033[0m\]) \[\033[1;32m\]\w\[\033[0m\]\$ '" C-m
-    else
-        # workers: 青色
-        tmux send-keys -t "multiagent:0.$i" "export PS1='(\[\033[1;34m\]${PANE_TITLES[$i]}\[\033[0m\]) \[\033[1;32m\]\w\[\033[0m\]\$ '" C-m
-    fi
+    # プロンプト設定
+    tmux send-keys -t "multiagent:0.$i" "export PS1='(${PANE_TITLES[$i]}) \\w\\$ '" C-m
     
     # ウェルカムメッセージ
     tmux send-keys -t "multiagent:0.$i" "echo '=== ${PANE_TITLES[$i]} エージェント ==='" C-m
@@ -92,7 +91,7 @@ log_info "👑 presidentセッション作成開始..."
 
 tmux new-session -d -s president
 tmux send-keys -t president "cd $(pwd)" C-m
-tmux send-keys -t president "export PS1='(\[\033[1;35m\]PRESIDENT\[\033[0m\]) \[\033[1;32m\]\w\[\033[0m\]\$ '" C-m
+tmux send-keys -t president "export PS1='(PRESIDENT) \\w\\$ '" C-m
 tmux send-keys -t president "echo '=== PRESIDENT セッション ==='" C-m
 tmux send-keys -t president "echo 'プロジェクト統括責任者'" C-m
 tmux send-keys -t president "echo '========================'" C-m

@@ -30,7 +30,7 @@ echo "✅ BOSS準備完了"
 ### 即座に実行（10秒以内）:
 1. **受信確認をPRESIDENTに返す（役割確認付き）**
    ```bash
-   ./agent-send.sh president "あなたはPRESIDENTです。boss1がタスクを受け付けました。要件整理を開始します"
+   $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "あなたはPRESIDENTです。boss1がタスクを受け付けました。要件整理を開始します"
    ```
 
 2. **タスク内容を記録**
@@ -58,7 +58,7 @@ echo "✅ BOSS準備完了"
 4. **全WORKERに同時指示**
    ```bash
    for i in 1 2 3; do
-       ./agent-send.sh worker$i "【緊急タスク】worker$iとして.multi-claude/tasks/worker_task.mdを確認して即実行"
+       $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker$i "【緊急タスク】worker$iとして.multi-claude/tasks/worker_task.mdを確認して即実行"
    done
    ```
 
@@ -92,12 +92,12 @@ EOF
 mkdir -p .multi-claude/context
 
 # WORKERに指示（役割確認付き）
-./agent-send.sh worker1 "あなたはworker1です。タスク: .multi-claude/tasks/worker_task.mdを確認して実行。進捗は.multi-claude/context/worker1_progress.mdに記録"
-./agent-send.sh worker2 "あなたはworker2です。タスク: .multi-claude/tasks/worker_task.mdを確認して実行。進捗は.multi-claude/context/worker2_progress.mdに記録"
-./agent-send.sh worker3 "あなたはworker3です。タスク: .multi-claude/tasks/worker_task.mdを確認して実行。進捗は.multi-claude/context/worker3_progress.mdに記録"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker1 "あなたはworker1です。タスク: .multi-claude/tasks/worker_task.mdを確認して実行。進捗は.multi-claude/context/worker1_progress.mdに記録"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker2 "あなたはworker2です。タスク: .multi-claude/tasks/worker_task.mdを確認して実行。進捗は.multi-claude/context/worker2_progress.mdに記録"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker3 "あなたはworker3です。タスク: .multi-claude/tasks/worker_task.mdを確認して実行。進捗は.multi-claude/context/worker3_progress.mdに記録"
 
 # 完了後PRESIDENTに報告（役割確認付き）
-./agent-send.sh president "あなたはPRESIDENTです。boss1より: 全ワーカーのタスク完了を確認しました。詳細は.multi-claude/tasks/completion_report.mdを参照"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "あなたはPRESIDENTです。boss1より: 全ワーカーのタスク完了を確認しました。詳細は.multi-claude/tasks/completion_report.mdを参照"
 ```
 
 ## 📋 定期実行タスク（3分ごと）
@@ -111,7 +111,7 @@ for i in 1 2 3; do
 done
 
 # 2. PRESIDENTに進捗報告（役割確認付き）
-./agent-send.sh president "あなたはPRESIDENTです。boss1より【進捗報告】全体の[XX]%完了。詳細は.multi-claude/tasks/progress_summary.md参照"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "あなたはPRESIDENTです。boss1より【進捗報告】全体の[XX]%完了。詳細は.multi-claude/tasks/progress_summary.md参照"
 
 # 3. タイムアウト確認（10分経過したタスクを警告）
 find .multi-claude/tmp -name "worker*_done.txt" -mmin +10 -exec echo "⚠️ 遅延: {}" \;
@@ -129,10 +129,10 @@ find .multi-claude/tmp -name "worker*_done.txt" -mmin +10 -exec echo "⚠️ 遅
 for i in 1 2 3; do
     echo "worker$iの状態確認..."
     if [ ! -f ".multi-claude/context/worker${i}_progress.md" ]; then
-        ./agent-send.sh worker$i "【再送信】至急応答してください"
+        $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker$i "【再送信】至急応答してください"
     fi
 done
 
 # PRESIDENTに異常報告
-./agent-send.sh president "【警告】一部のworkerが応答しません。確認中です"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "【警告】一部のworkerが応答しません。確認中です"
 ```

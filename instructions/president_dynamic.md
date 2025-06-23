@@ -33,7 +33,7 @@ echo "✅ PRESIDENT準備完了"
 
 2. **BOSSに即座に転送（役割確認付き）**
    ```bash
-   ./agent-send.sh boss1 "あなたはboss1です。【タスク】ユーザーから以下の要求を受けました: [タスク内容をそのまま転記]"
+   $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "あなたはboss1です。【タスク】ユーザーから以下の要求を受けました: [タスク内容をそのまま転記]"
    ```
 
 3. **単独作業の禁止確認**
@@ -44,7 +44,7 @@ echo "✅ PRESIDENT準備完了"
 ## BOSSへのタスク伝達例
 ```bash
 # タスク概要をBOSSに送信（詳細な要件整理はBOSSが実施）
-./agent-send.sh boss1 "あなたはboss1です。タスク: [タスク概要]。要件を整理して、WORKERへの作業指示を生成してください"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "あなたはboss1です。タスク: [タスク概要]。要件を整理して、WORKERへの作業指示を生成してください"
 ```
 
 ## 従来の指示書生成コマンド（BOSSが必要に応じて使用）
@@ -62,9 +62,9 @@ cat > .multi-claude/tasks/boss_task.md << 'EOF'
 3. 完了報告を待機してPRESIDENTに報告
 
 ## 送信コマンド
-./agent-send.sh worker1 "あなたはworker1です。.multi-claude/tasks/worker_task.mdを確認して作業開始"
-./agent-send.sh worker2 "あなたはworker2です。.multi-claude/tasks/worker_task.mdを確認して作業開始"  
-./agent-send.sh worker3 "あなたはworker3です。.multi-claude/tasks/worker_task.mdを確認して作業開始"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker1 "あなたはworker1です。.multi-claude/tasks/worker_task.mdを確認して作業開始"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker2 "あなたはworker2です。.multi-claude/tasks/worker_task.mdを確認して作業開始"  
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker3 "あなたはworker3です。.multi-claude/tasks/worker_task.mdを確認して作業開始"
 EOF
 
 # WORKER用指示書生成
@@ -98,7 +98,7 @@ echo "完了ファイルを作成: .multi-claude/tmp/worker${WORKER_NUM}_done.tx
 # 全員の完了確認
 if [ -f .multi-claude/tmp/worker1_done.txt ] && [ -f .multi-claude/tmp/worker2_done.txt ] && [ -f .multi-claude/tmp/worker3_done.txt ]; then
     echo "全員の作業完了を確認（最後の完了者として報告）"
-    ./agent-send.sh boss1 "全ワーカーの作業が完了しました"
+    $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "全ワーカーの作業が完了しました"
     
     # 完了ファイルをクリア（次回の実行のため）
     rm -f .multi-claude/tmp/worker*_done.txt
@@ -115,7 +115,7 @@ EOF
 ## 📋 定期実行タスク（5分ごと）
 ```bash
 # 進捗確認
-./agent-send.sh boss1 "進捗状況を報告してください"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "進捗状況を報告してください"
 ```
 
 ## ❗ 重要な制約事項
@@ -130,7 +130,7 @@ EOF
 tmux list-panes -t multiagent
 
 # 2. 直接workerに緊急指示
-./agent-send.sh worker1 "緊急: BOSSが応答しません。待機してください"
-./agent-send.sh worker2 "緊急: BOSSが応答しません。待機してください"
-./agent-send.sh worker3 "緊急: BOSSが応答しません。待機してください"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker1 "緊急: BOSSが応答しません。待機してください"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker2 "緊急: BOSSが応答しません。待機してください"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker3 "緊急: BOSSが忎答しません。待機してください"
 ```
