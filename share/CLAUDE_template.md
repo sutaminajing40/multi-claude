@@ -1,5 +1,16 @@
 # 🤖 Multi-Claude システム設定
 
+## システム概要
+
+Multi-Claudeは、複数のClaude Codeインスタンスが協調して動作するマルチエージェント開発システムです。
+
+### プロジェクト情報
+- **起動日時**: [STARTUP_TIME]
+- **プロジェクトパス**: [PROJECT_PATH]
+- **環境変数**:
+  - `MULTI_CLAUDE_GLOBAL`: [GLOBAL_PATH]
+  - `MULTI_CLAUDE_LOCAL`: [LOCAL_PATH]
+
 ## Agent Communication System
 
 ### エージェント構成
@@ -40,3 +51,62 @@ $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh [相手] "[メッセージ]"
 3. **ワーカー間コンテキスト共有**
    - 各ワーカーが進捗を `.multi-claude/context/worker[番号]_progress.md` に記録
    - 作業の重複を防ぎ、効率的な協調作業を実現
+
+## プロジェクト固有のデータ配置
+
+```
+.multi-claude/
+├── session/          # セッション固有データ
+│   ├── tmp/          # 一時ファイル（ワーカー完了状態など）
+│   ├── logs/         # 通信ログ
+│   └── runtime/      # ランタイム情報
+├── context/          # ワーカー進捗共有
+├── tasks/            # タスク管理
+│   ├── current_task.md    # 現在のタスク
+│   └── completion_report.md # 完了レポート
+└── config/           # プロジェクト設定
+```
+
+## クイックコマンドリファレンス
+
+```bash
+# エージェント間通信
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "メッセージ"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh --list  # 利用可能エージェント一覧
+
+# ログ確認
+tail -f .multi-claude/session/logs/send_log.txt      # リアルタイムログ監視
+grep "worker1" .multi-claude/session/logs/send_log.txt # 特定エージェントのログ
+
+# タスク・進捗確認
+cat .multi-claude/tasks/current_task.md              # 現在のタスク
+ls -la .multi-claude/context/worker*_progress.md     # ワーカー進捗
+
+# セッション管理
+tmux list-sessions                                   # セッション一覧
+tmux attach-session -t president                     # PRESIDENTに接続
+tmux attach-session -t multiagent                    # MULTIAGENTに接続
+
+# システム制御
+multi-claude --exit                                  # システム完全終了
+multi-claude --help                                  # ヘルプ表示
+```
+
+## トラブルシューティング
+
+### エージェントが応答しない場合
+```bash
+# システム状態確認
+$MULTI_CLAUDE_GLOBAL/bin/health-check.sh
+
+# tmuxセッション確認
+tmux list-panes -t multiagent
+tmux list-panes -t president
+```
+
+### ログの場所
+- 通信ログ: `.multi-claude/session/logs/send_log.txt`
+- エラーログ: 各tmuxペイン内で確認
+
+---
+*このファイルはmulti-claude起動時に自動生成されました*

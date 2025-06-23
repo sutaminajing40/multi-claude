@@ -230,11 +230,14 @@ setup_first_time() {
     CLAUDE_TEMPLATE_PATH=""
     if [ -n "$MULTI_CLAUDE_SHARE" ]; then
         CLAUDE_TEMPLATE_PATH="${MULTI_CLAUDE_SHARE}/CLAUDE_template.md"
-    elif [ -f "$HOME/.multi-claude/CLAUDE_template.md" ]; then
-        CLAUDE_TEMPLATE_PATH="$HOME/.multi-claude/CLAUDE_template.md"
+    elif [ -f "$HOME/.multi-claude/share/CLAUDE_template.md" ]; then
+        CLAUDE_TEMPLATE_PATH="$HOME/.multi-claude/share/CLAUDE_template.md"
+    elif [ -f "$MULTI_CLAUDE_GLOBAL/share/CLAUDE_template.md" ]; then
+        CLAUDE_TEMPLATE_PATH="$MULTI_CLAUDE_GLOBAL/share/CLAUDE_template.md"
     fi
     
     if [ -n "$CLAUDE_TEMPLATE_PATH" ]; then
+        log_info "CLAUDE_template.mdを検出: $CLAUDE_TEMPLATE_PATH"
         if [ -f "./CLAUDE.md" ]; then
             # 既存のCLAUDE.mdがある場合、Multi-Claudeシステム設定を追加
             log_info "既存のCLAUDE.mdにMulti-Claudeシステム設定を追加中..."
@@ -244,8 +247,12 @@ setup_first_time() {
                 # 既存の内容を一時保存
                 cp "./CLAUDE.md" "./CLAUDE.md.original"
                 
-                # Multi-Claudeシステム設定を先頭に追加
-                cp "$CLAUDE_TEMPLATE_PATH" "./CLAUDE.md.tmp"
+                # Multi-Claudeシステム設定を先頭に追加（プレースホルダーを置き換え）
+                sed -e "s|\[STARTUP_TIME\]|$(date '+%Y-%m-%d %H:%M:%S')|g" \
+                    -e "s|\[PROJECT_PATH\]|$(pwd)|g" \
+                    -e "s|\[GLOBAL_PATH\]|$MULTI_CLAUDE_GLOBAL|g" \
+                    -e "s|\[LOCAL_PATH\]|$MULTI_CLAUDE_LOCAL|g" \
+                    "$CLAUDE_TEMPLATE_PATH" > "./CLAUDE.md.tmp"
                 echo "" >> "./CLAUDE.md.tmp"
                 echo "---" >> "./CLAUDE.md.tmp"
                 echo "" >> "./CLAUDE.md.tmp"
@@ -262,10 +269,19 @@ setup_first_time() {
                 log_info "Multi-Claudeシステム設定は既に追加されています"
             fi
         else
-            # CLAUDE.mdがない場合は新規作成
+            # CLAUDE.mdがない場合は新規作成（プレースホルダーを置き換え）
             log_info "CLAUDE.mdを作成中..."
-            cp "$CLAUDE_TEMPLATE_PATH" "./CLAUDE.md" 2>/dev/null || true
+            sed -e "s|\[STARTUP_TIME\]|$(date '+%Y-%m-%d %H:%M:%S')|g" \
+                -e "s|\[PROJECT_PATH\]|$(pwd)|g" \
+                -e "s|\[GLOBAL_PATH\]|$MULTI_CLAUDE_GLOBAL|g" \
+                -e "s|\[LOCAL_PATH\]|$MULTI_CLAUDE_LOCAL|g" \
+                "$CLAUDE_TEMPLATE_PATH" > "./CLAUDE.md"
         fi
+    else
+        log_error "CLAUDE_template.mdが見つかりません"
+        log_info "  検索パス:"
+        log_info "  - $HOME/.multi-claude/share/CLAUDE_template.md"
+        log_info "  - $MULTI_CLAUDE_GLOBAL/share/CLAUDE_template.md"
     fi
     
     log_success "✅ 初回セットアップ完了"
@@ -524,6 +540,15 @@ done
 
 log_success "✅ Claude Code起動完了"
 
+# エージェントに役割を認識させる初期メッセージを送信
+log_info "⏳ Claude Codeの起動を待機中..."
+sleep 5  # Claude Codeが完全に起動するまで待機
+log_info "🤖 エージェントに役割を認識させています..."
+tmux send-keys -t multiagent:0.0 "あなたはboss1です。CLAUDE.mdと$MULTI_CLAUDE_GLOBAL/instructions/boss_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.1 "あなたはworker1です。CLAUDE.mdと$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.2 "あなたはworker2です。CLAUDE.mdと$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.3 "あなたはworker3です。CLAUDE.mdと$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+
 # STEP 4.5: システム起動確認とタスクチェック
 log_info "🔄 システム起動確認中..."
 sleep 3
@@ -598,17 +623,59 @@ else
     echo "  再起動: multi-claude"
     echo ""
     
-    # PRESIDENTセッションにアタッチしてClaude Codeを起動
-    echo "🤖 PRESIDENTセッションに接続してClaude Codeを起動中..."
-    echo "   MULTIAGENTウィンドウは別ウィンドウで監視可能です"
+    # PRESIDENTターミナルウィンドウを起動
+    echo "🤖 PRESIDENTウィンドウを起動中..."
+    echo "   MULTIAGENTウィンドウとPRESIDENTウィンドウで監視可能です"
     sleep 2
     
     # presidentセッションで環境変数を設定してClaude Codeを起動
     tmux send-keys -t president:0 "export MULTI_CLAUDE_LOCAL='$MULTI_CLAUDE_LOCAL'" C-m
     tmux send-keys -t president:0 "export MULTI_CLAUDE_GLOBAL='$MULTI_CLAUDE_GLOBAL'" C-m
     tmux send-keys -t president:0 "$CLAUDE_CMD $SKIP_PERMISSIONS" C-m
-    sleep 2
     
-    # presidentセッションにアタッチ
-    exec tmux attach-session -t president
+    # CLAUDE.mdの存在を確認するメッセージを送信（起動完了後）
+    sleep 5  # Claude Codeが完全に起動するまで待機
+    tmux send-keys -t president:0 "あなたはPRESIDENTです。まず、CLAUDE.mdと$MULTI_CLAUDE_GLOBAL/instructions/president_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+    
+    # PRESIDENT用ターミナルを別タブで起動
+    if [ "$TERMINAL_APP" = "iTerm" ]; then
+        # iTerm2を使用 - 新しいタブで開く
+        osascript << EOF 2>/dev/null
+tell application "iTerm"
+    tell current window
+        create tab with default profile
+        tell current tab
+            tell current session
+                write text "cd '$CURRENT_DIR' && echo '👑 PRESIDENT ウィンドウ' && tmux attach-session -t president"
+                set name to "Multi-Claude: PRESIDENT"
+            end tell
+        end tell
+    end tell
+end tell
+EOF
+    else
+        # 標準ターミナルを使用
+        osascript << EOF 2>/dev/null
+tell application "Terminal"
+    do script "cd '$CURRENT_DIR' && echo '👑 PRESIDENT ウィンドウ' && tmux attach-session -t president"
+    delay 1
+    set currentWindow to front window
+    set currentTab to selected tab of currentWindow
+    try
+        tell currentTab
+            set custom title to "Multi-Claude: PRESIDENT"
+        end tell
+    on error
+        -- タイトル設定エラーは無視
+    end try
+end tell
+EOF
+    fi
+    
+    echo ""
+    echo "✅ 2つのウィンドウが起動しました："
+    echo "   1. MULTIAGENT (boss1 + worker1,2,3)"
+    echo "   2. PRESIDENT (メインの対話窓口)"
+    echo ""
+    echo "💡 ヒント: 各ウィンドウで作業状況を確認できます"
 fi

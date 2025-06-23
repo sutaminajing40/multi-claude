@@ -98,12 +98,25 @@ if [ -d "share" ] && [ -f "share/CLAUDE_template.md" ]; then
 else
     # CLAUDE.mdテンプレート作成（shareディレクトリがない場合）
 cat > "$INSTALL_DIR/share/CLAUDE_template.md" << 'EOF'
-# Agent Communication System
+# 🤖 Multi-Claude システム設定
 
-## エージェント構成
-- **PRESIDENT** (別セッション): 統括責任者 + 動的指示書生成
-- **boss1** (multiagent:0.0): チームリーダー + 指示書読み込み
-- **worker1,2,3** (multiagent:0.1-3): 実行担当 + 指示書実行
+## システム概要
+
+Multi-Claudeは、複数のClaude Codeインスタンスが協調して動作するマルチエージェント開発システムです。
+
+### プロジェクト情報
+- **起動日時**: [STARTUP_TIME]
+- **プロジェクトパス**: [PROJECT_PATH]
+- **環境変数**:
+  - `MULTI_CLAUDE_GLOBAL`: [GLOBAL_PATH]
+  - `MULTI_CLAUDE_LOCAL`: [LOCAL_PATH]
+
+## Agent Communication System
+
+### エージェント構成
+- **PRESIDENT** (別セッション): 統括責任者 + タスク概要伝達
+- **boss1** (multiagent:0.0): チームリーダー + 要件整理・指示書生成
+- **worker1,2,3** (multiagent:0.1-3): 実行担当 + 進捗共有
 
 ## あなたの役割（動的版）
 - **PRESIDENT**: @instructions/president_dynamic.md
