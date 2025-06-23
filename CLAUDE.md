@@ -141,8 +141,8 @@ multi-claude --exit                        # 完全終了
 multi-claude --dangerously-skip-permissions # 権限確認スキップ起動
 
 # エージェント間通信
-$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh [エージェント名] "[メッセージ]"
-$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh --list  # 利用可能エージェント一覧
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh [エージェント名] "[メッセージ]"
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh --list  # 利用可能エージェント一覧
 # 注: MULTI_CLAUDE_GLOBAL は multi-claude 起動時に自動設定されます
 ```
 

@@ -49,6 +49,14 @@ rm -f "$MULTI_CLAUDE_LOCAL/session/tmp/worker_ids/*.id" 2>/dev/null && log_info 
 # 役割判定システム用ディレクトリ作成
 mkdir -p "$MULTI_CLAUDE_LOCAL/session/runtime/session-setup"
 
+# agent-send.shをローカルにコピー
+if [ -f "$HOME/.multi-claude/bin/agent-send.sh" ]; then
+    mkdir -p "$MULTI_CLAUDE_LOCAL/bin"
+    cp "$HOME/.multi-claude/bin/agent-send.sh" "$MULTI_CLAUDE_LOCAL/bin/agent-send.sh"
+    chmod +x "$MULTI_CLAUDE_LOCAL/bin/agent-send.sh"
+    log_info "agent-send.shをローカルにコピー完了"
+fi
+
 log_success "✅ クリーンアップ完了"
 echo ""
 

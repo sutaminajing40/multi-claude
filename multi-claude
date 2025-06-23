@@ -583,7 +583,10 @@ if [ -f "$MULTI_CLAUDE_LOCAL/tasks/current_task.md" ]; then
     
     # PRESIDENTに未完了タスクの確認を促す
     sleep 2
-    if [ -f "$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh" ]; then
+    # ローカル、グローバルの順で確認
+    if [ -f "$MULTI_CLAUDE_LOCAL/bin/agent-send.sh" ]; then
+        $MULTI_CLAUDE_LOCAL/bin/agent-send.sh president "システムが起動しました。前回の未完了タスクがあります。$MULTI_CLAUDE_LOCAL/tasks/current_task.mdを確認してください。"
+    elif [ -f "$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh" ]; then
         $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "システムが起動しました。前回の未完了タスクがあります。$MULTI_CLAUDE_LOCAL/tasks/current_task.mdを確認してください。"
     elif [ -f "$MULTI_CLAUDE_GLOBAL/agent-send.sh" ]; then
         $MULTI_CLAUDE_GLOBAL/agent-send.sh president "システムが起動しました。前回の未完了タスクがあります。$MULTI_CLAUDE_LOCAL/tasks/current_task.mdを確認してください。"
@@ -598,7 +601,10 @@ if [ -n "$DIRECT_MESSAGE" ]; then
     sleep 2
     
     # agent-send.shを使用してメッセージ送信
-    if [ -f "$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh" ]; then
+    # ローカル、グローバルの順で確認
+    if [ -f "$MULTI_CLAUDE_LOCAL/bin/agent-send.sh" ]; then
+        $MULTI_CLAUDE_LOCAL/bin/agent-send.sh president "$DIRECT_MESSAGE"
+    elif [ -f "$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh" ]; then
         $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "$DIRECT_MESSAGE"
     elif [ -f "$MULTI_CLAUDE_GLOBAL/agent-send.sh" ]; then
         $MULTI_CLAUDE_GLOBAL/agent-send.sh president "$DIRECT_MESSAGE"
