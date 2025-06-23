@@ -28,23 +28,26 @@ tmux kill-session -t president 2>/dev/null && log_info "presidentセッション
 # 既存のtmuxプロセスが完全に終了するまで待機
 sleep 0.5
 
+# 環境変数設定
+export MULTI_CLAUDE_LOCAL="$(pwd)/.multi-claude"
+
 # ローカルディレクトリ作成（プロジェクト固有データ用）
-mkdir -p ./.multi-claude/session/tmp
-mkdir -p ./.multi-claude/session/logs
-mkdir -p ./.multi-claude/session/runtime
-mkdir -p ./.multi-claude/context
-mkdir -p ./.multi-claude/tasks
-mkdir -p ./.multi-claude/config
+mkdir -p "$MULTI_CLAUDE_LOCAL/session/tmp"
+mkdir -p "$MULTI_CLAUDE_LOCAL/session/logs"
+mkdir -p "$MULTI_CLAUDE_LOCAL/session/runtime"
+mkdir -p "$MULTI_CLAUDE_LOCAL/context"
+mkdir -p "$MULTI_CLAUDE_LOCAL/tasks"
+mkdir -p "$MULTI_CLAUDE_LOCAL/config"
 
 # 完了ファイルクリア
-rm -f ./.multi-claude/session/tmp/worker*_done.txt 2>/dev/null && log_info "既存の完了ファイルをクリア" || log_info "完了ファイルは存在しませんでした"
+rm -f "$MULTI_CLAUDE_LOCAL/session/tmp/worker*_done.txt" 2>/dev/null && log_info "既存の完了ファイルをクリア" || log_info "完了ファイルは存在しませんでした"
 
 # ワーカーIDディレクトリ作成
-mkdir -p ./.multi-claude/session/tmp/worker_ids
-rm -f ./.multi-claude/session/tmp/worker_ids/*.id 2>/dev/null && log_info "既存のワーカーIDファイルをクリア" || log_info "ワーカーIDファイルは存在しませんでした"
+mkdir -p "$MULTI_CLAUDE_LOCAL/session/tmp/worker_ids"
+rm -f "$MULTI_CLAUDE_LOCAL/session/tmp/worker_ids/*.id" 2>/dev/null && log_info "既存のワーカーIDファイルをクリア" || log_info "ワーカーIDファイルは存在しませんでした"
 
 # 役割判定システム用ディレクトリ作成
-mkdir -p ./.multi-claude/session/runtime/session-setup
+mkdir -p "$MULTI_CLAUDE_LOCAL/session/runtime/session-setup"
 
 log_success "✅ クリーンアップ完了"
 echo ""
@@ -141,9 +144,9 @@ echo "     # 手順2: 認証後、multiagent一括起動"
 echo "     for i in {0..3}; do tmux send-keys -t multiagent:0.\$i 'claude' C-m; done"
 echo ""
 echo "  3. 📜 指示書確認:"
-echo "     PRESIDENT: .multi-claude/instructions/president_dynamic.md"
-echo "     boss1: .multi-claude/instructions/boss_dynamic.md"
-echo "     worker1,2,3: .multi-claude/instructions/worker_dynamic.md"
+echo "     PRESIDENT: \$MULTI_CLAUDE_LOCAL/instructions/president_dynamic.md"
+echo "     boss1: \$MULTI_CLAUDE_LOCAL/instructions/boss_dynamic.md"
+echo "     worker1,2,3: \$MULTI_CLAUDE_LOCAL/instructions/worker_dynamic.md"
 echo "     システム構造: CLAUDE.md"
 echo ""
 echo "  4. 🎯 デモ実行: PRESIDENTに「あなたはpresidentです。指示書に従って」と入力"

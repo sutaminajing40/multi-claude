@@ -70,11 +70,11 @@ exit_system() {
     
     # STEP 2: 一時ファイル削除
     log_info "🧹 一時ファイル削除中..."
-    rm -f ./.multi-claude/tmp/worker*_done.txt 2>/dev/null || true
-    rm -rf ./.multi-claude/tmp 2>/dev/null || true
-    rm -rf ./.multi-claude/logs 2>/dev/null || true
-    rm -rf ./.multi-claude/context 2>/dev/null || true
-    rm -rf ./.multi-claude/tasks 2>/dev/null || true
+    rm -f "$MULTI_CLAUDE_LOCAL/tmp/worker*_done.txt" 2>/dev/null || true
+    rm -rf "$MULTI_CLAUDE_LOCAL/tmp" 2>/dev/null || true
+    rm -rf "$MULTI_CLAUDE_LOCAL/logs" 2>/dev/null || true
+    rm -rf "$MULTI_CLAUDE_LOCAL/context" 2>/dev/null || true
+    rm -rf "$MULTI_CLAUDE_LOCAL/tasks" 2>/dev/null || true
     
     # STEP 3: ターミナルウィンドウ閉鎖（macOSのみ）
     if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -219,13 +219,13 @@ setup_first_time() {
     log_info "🎯 初回セットアップを実行します..."
     
     # ローカルディレクトリ作成（プロジェクト固有データ用）
-    mkdir -p ./.multi-claude/session/tmp
-    mkdir -p ./.multi-claude/session/logs
-    mkdir -p ./.multi-claude/session/runtime
-    mkdir -p ./.multi-claude/context
-    mkdir -p ./.multi-claude/tasks
-    mkdir -p ./.multi-claude/config
-    mkdir -p ./.multi-claude/instructions
+    mkdir -p "$MULTI_CLAUDE_LOCAL/session/tmp"
+    mkdir -p "$MULTI_CLAUDE_LOCAL/session/logs"
+    mkdir -p "$MULTI_CLAUDE_LOCAL/session/runtime"
+    mkdir -p "$MULTI_CLAUDE_LOCAL/context"
+    mkdir -p "$MULTI_CLAUDE_LOCAL/tasks"
+    mkdir -p "$MULTI_CLAUDE_LOCAL/config"
+    mkdir -p "$MULTI_CLAUDE_LOCAL/instructions"
     
     # CLAUDE.mdの処理（既存ファイルを保持）
     CLAUDE_TEMPLATE_PATH=""
@@ -288,9 +288,9 @@ setup_first_time() {
     # 指示書ファイルをローカルにコピー
     log_info "指示書ファイルをローカルにコピー中..."
     if [ -d "$MULTI_CLAUDE_GLOBAL/instructions" ]; then
-        cp "$MULTI_CLAUDE_GLOBAL/instructions/president_dynamic.md" ./.multi-claude/instructions/ 2>/dev/null || true
-        cp "$MULTI_CLAUDE_GLOBAL/instructions/boss_dynamic.md" ./.multi-claude/instructions/ 2>/dev/null || true
-        cp "$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.md" ./.multi-claude/instructions/ 2>/dev/null || true
+        cp "$MULTI_CLAUDE_GLOBAL/instructions/president_dynamic.md" "$MULTI_CLAUDE_LOCAL/instructions/" 2>/dev/null || true
+        cp "$MULTI_CLAUDE_GLOBAL/instructions/boss_dynamic.md" "$MULTI_CLAUDE_LOCAL/instructions/" 2>/dev/null || true
+        cp "$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.md" "$MULTI_CLAUDE_LOCAL/instructions/" 2>/dev/null || true
         log_success "✅ 指示書ファイルをコピーしました"
     else
         log_error "グローバル指示書ディレクトリが見つかりません: $MULTI_CLAUDE_GLOBAL/instructions"
@@ -301,7 +301,7 @@ setup_first_time() {
 
 # STEP 0: 初回セットアップチェック
 # ローカルディレクトリが存在しない場合のみセットアップ
-if [ ! -d "./.multi-claude/session" ] || [ ! -f "./CLAUDE.md" ]; then
+if [ ! -d "$MULTI_CLAUDE_LOCAL/session" ] || [ ! -f "./CLAUDE.md" ]; then
     setup_first_time
 fi
 
@@ -556,10 +556,10 @@ log_success "✅ Claude Code起動完了"
 log_info "⏳ Claude Codeの起動を待機中..."
 sleep 5  # Claude Codeが完全に起動するまで待機
 log_info "🤖 エージェントに役割を認識させています..."
-tmux send-keys -t multiagent:0.0 "あなたはboss1です。CLAUDE.mdと.multi-claude/instructions/boss_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
-tmux send-keys -t multiagent:0.1 "あなたはworker1です。CLAUDE.mdと.multi-claude/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
-tmux send-keys -t multiagent:0.2 "あなたはworker2です。CLAUDE.mdと.multi-claude/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
-tmux send-keys -t multiagent:0.3 "あなたはworker3です。CLAUDE.mdと.multi-claude/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.0 "あなたはboss1です。CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/boss_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.1 "あなたはworker1です。CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.2 "あなたはworker2です。CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.3 "あなたはworker3です。CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
 
 # STEP 4.5: システム起動確認とタスクチェック
 log_info "🔄 システム起動確認中..."
@@ -569,24 +569,24 @@ sleep 3
 log_info "📡 エージェント間通信テスト中..."
 
 # システム起動確認ファイルを作成
-mkdir -p ./.multi-claude/tasks
-echo "Multi-Claude System Started at $(date)" > ./.multi-claude/tasks/system_status.txt
+mkdir -p "$MULTI_CLAUDE_LOCAL/tasks"
+echo "Multi-Claude System Started at $(date)" > "$MULTI_CLAUDE_LOCAL/tasks/system_status.txt"
 
 # 前回のタスク状態をチェック
-if [ -f "./.multi-claude/tasks/current_task.md" ]; then
+if [ -f "$MULTI_CLAUDE_LOCAL/tasks/current_task.md" ]; then
     log_info "📋 前回の未完了タスクを検出しました"
     echo ""
     echo "===== 未完了タスク ====="
-    head -5 ./.multi-claude/tasks/current_task.md
+    head -5 "$MULTI_CLAUDE_LOCAL/tasks/current_task.md"
     echo "========================"
     echo ""
     
     # PRESIDENTに未完了タスクの確認を促す
     sleep 2
     if [ -f "$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh" ]; then
-        $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "システムが起動しました。前回の未完了タスクがあります。.multi-claude/tasks/current_task.mdを確認してください。"
+        $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "システムが起動しました。前回の未完了タスクがあります。$MULTI_CLAUDE_LOCAL/tasks/current_task.mdを確認してください。"
     elif [ -f "$MULTI_CLAUDE_GLOBAL/agent-send.sh" ]; then
-        $MULTI_CLAUDE_GLOBAL/agent-send.sh president "システムが起動しました。前回の未完了タスクがあります。.multi-claude/tasks/current_task.mdを確認してください。"
+        $MULTI_CLAUDE_GLOBAL/agent-send.sh president "システムが起動しました。前回の未完了タスクがあります。$MULTI_CLAUDE_LOCAL/tasks/current_task.mdを確認してください。"
     fi
 fi
 
@@ -647,7 +647,7 @@ else
     
     # CLAUDE.mdの存在を確認するメッセージを送信（起動完了後）
     sleep 5  # Claude Codeが完全に起動するまで待機
-    tmux send-keys -t president:0 "あなたはPRESIDENTです。まず、CLAUDE.mdと.multi-claude/instructions/president_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+    tmux send-keys -t president:0 "あなたはPRESIDENTです。まず、CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/president_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
     
     # PRESIDENT用ターミナルを別タブで起動
     if [ "$TERMINAL_APP" = "iTerm" ]; then

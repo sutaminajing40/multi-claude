@@ -21,9 +21,9 @@ Multi-Claudeは、複数のClaude Codeインスタンスが協調して動作す
 
 ### あなたの役割（動的版）
 
-- **PRESIDENT**: @.multi-claude/instructions/president_dynamic.md
-- **boss1**: @.multi-claude/instructions/boss_dynamic.md
-- **worker1,2,3**: @.multi-claude/instructions/worker_dynamic.md
+- **PRESIDENT**: @$MULTI_CLAUDE_LOCAL/instructions/president_dynamic.md
+- **boss1**: @$MULTI_CLAUDE_LOCAL/instructions/boss_dynamic.md
+- **worker1,2,3**: @$MULTI_CLAUDE_LOCAL/instructions/worker_dynamic.md
 
 ### メッセージ送信
 
@@ -45,17 +45,17 @@ $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh [相手] "[メッセージ]"
    - WORKER: 進捗を共有しながら実行
 
 2. **クリーンなファイル配置**
-   - すべての作業ファイルは `.multi-claude/` フォルダ内に配置
+   - すべての作業ファイルは `$MULTI_CLAUDE_LOCAL/` フォルダ内に配置
    - プロジェクトルートを汚さない設計
 
 3. **ワーカー間コンテキスト共有**
-   - 各ワーカーが進捗を `.multi-claude/context/worker[番号]_progress.md` に記録
+   - 各ワーカーが進捗を `$MULTI_CLAUDE_LOCAL/context/worker[番号]_progress.md` に記録
    - 作業の重複を防ぎ、効率的な協調作業を実現
 
 ## プロジェクト固有のデータ配置
 
 ```
-.multi-claude/
+$MULTI_CLAUDE_LOCAL/
 ├── instructions/     # 役割定義・指示書（プロジェクト固有）
 │   ├── president_dynamic.md  # カスタマイズ可能
 │   ├── boss_dynamic.md       # カスタマイズ可能
@@ -81,12 +81,12 @@ $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "メッセージ"
 $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh --list  # 利用可能エージェント一覧
 
 # ログ確認
-tail -f .multi-claude/session/logs/send_log.txt      # リアルタイムログ監視
-grep "worker1" .multi-claude/session/logs/send_log.txt # 特定エージェントのログ
+tail -f $MULTI_CLAUDE_LOCAL/session/logs/send_log.txt      # リアルタイムログ監視
+grep "worker1" $MULTI_CLAUDE_LOCAL/session/logs/send_log.txt # 特定エージェントのログ
 
 # タスク・進捗確認
-cat .multi-claude/tasks/current_task.md              # 現在のタスク
-ls -la .multi-claude/context/worker*_progress.md     # ワーカー進捗
+cat $MULTI_CLAUDE_LOCAL/tasks/current_task.md              # 現在のタスク
+ls -la $MULTI_CLAUDE_LOCAL/context/worker*_progress.md     # ワーカー進捗
 
 # セッション管理
 tmux list-sessions                                   # セッション一覧
@@ -111,7 +111,7 @@ tmux list-panes -t president
 ```
 
 ### ログの場所
-- 通信ログ: `.multi-claude/session/logs/send_log.txt`
+- 通信ログ: `$MULTI_CLAUDE_LOCAL/session/logs/send_log.txt`
 - エラーログ: 各tmuxペイン内で確認
 
 ---

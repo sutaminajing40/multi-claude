@@ -118,6 +118,21 @@ sed -i 's/- \[ \] タスク1/- \[x\] タスク1/' TODO.md
 cat TODO.md | grep -E "^\- \["
 ```
 
+### 💡 重要: ファイルパスについて
+**Claude Codeはディレクトリを移動することがあるため、すべての `.multi-claude/` ディレクトリ参照は `$MULTI_CLAUDE_LOCAL` 環境変数を使用して絶対パスでアクセスしてください。**
+
+```bash
+# ✅ 正しい例
+cat "$MULTI_CLAUDE_LOCAL/tasks/current_task.md"
+mkdir -p "$MULTI_CLAUDE_LOCAL/context"
+touch "$MULTI_CLAUDE_LOCAL/session/tmp/worker1_done.txt"
+
+# ❌ 間違った例（使用しないでください）
+cat .multi-claude/tasks/current_task.md
+mkdir -p .multi-claude/context
+touch ./.multi-claude/session/tmp/worker1_done.txt
+```
+
 ### システム操作
 ```bash
 # 起動・終了
@@ -147,10 +162,10 @@ tmux attach-session -t president      # presidentセッションにアタッチ
 tmux kill-server                      # 全セッション強制終了
 
 # ログ確認
-cat .multi-claude/session/logs/send_log.txt              # 全送信ログ
-grep "boss1" .multi-claude/session/logs/send_log.txt     # 特定エージェントのログ
-ls -la .multi-claude/session/tmp/worker*_done.txt        # 完了ファイル確認
-ls -la .multi-claude/context/worker*_progress.md         # 進捗ファイル確認
+cat "$MULTI_CLAUDE_LOCAL/session/logs/send_log.txt"              # 全送信ログ
+grep "boss1" "$MULTI_CLAUDE_LOCAL/session/logs/send_log.txt"     # 特定エージェントのログ
+ls -la "$MULTI_CLAUDE_LOCAL/session/tmp/worker*_done.txt"        # 完了ファイル確認
+ls -la "$MULTI_CLAUDE_LOCAL/context/worker*_progress.md"         # 進捗ファイル確認
 
 # ヘルスチェック（新機能）
 $MULTI_CLAUDE_GLOBAL/bin/health-check.sh        # システム状態確認
@@ -181,9 +196,9 @@ $HOME/.multi-claude/
     └── CLAUDE_template.md
 ```
 
-**ローカル（プロジェクトの.multi-claude/）** - プロジェクト固有
+**ローカル（$MULTI_CLAUDE_LOCAL）** - プロジェクト固有
 ```
-.multi-claude/
+$MULTI_CLAUDE_LOCAL/  # 絶対パス: $(pwd)/.multi-claude
 ├── instructions/     # 役割定義・指示書（プロジェクト固有）
 │   ├── president_dynamic.md
 │   ├── boss_dynamic.md
@@ -206,7 +221,7 @@ $HOME/.multi-claude/
 ```
 
 ### 3. ワーカー間コンテキスト共有
-- 各ワーカーが進捗を `.multi-claude/context/worker[番号]_progress.md` に記録
+- 各ワーカーが進捗を `$MULTI_CLAUDE_LOCAL/context/worker[番号]_progress.md` に記録
 - 作業開始前に他のワーカーの進捗を確認
 - 作業の重複を防ぎ、効率的な協調作業を実現
 

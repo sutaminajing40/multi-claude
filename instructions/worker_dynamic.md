@@ -28,12 +28,12 @@ case "$SESSION_AND_PANE" in
 esac
 
 # IDファイルを事前作成
-mkdir -p .multi-claude/tmp/worker_ids
-echo "$WORKER_NUM" > .multi-claude/tmp/worker_ids/worker${WORKER_NUM}.id
+mkdir -p $MULTI_CLAUDE_LOCAL/tmp/worker_ids
+echo "$WORKER_NUM" > $MULTI_CLAUDE_LOCAL/tmp/worker_ids/worker${WORKER_NUM}.id
 
 # 2. 作業ディレクトリ確認
-mkdir -p .multi-claude/{context,tmp}
-touch ".multi-claude/context/worker${WORKER_NUM}_ready.txt"
+mkdir -p $MULTI_CLAUDE_LOCAL/{context,tmp}
+touch "$MULTI_CLAUDE_LOCAL/context/worker${WORKER_NUM}_ready.txt"
 
 # 3. 起動確認（起動メッセージは送信しない）
 echo "✅ worker${WORKER_NUM}準備完了"
@@ -55,26 +55,26 @@ echo "✅ worker${WORKER_NUM}準備完了"
    # BOSSからのメッセージから番号を抽出
    if [[ "$MESSAGE" =~ worker([1-3]) ]]; then
        WORKER_NUM="${BASH_REMATCH[1]}"
-       mkdir -p .multi-claude/tmp/worker_ids
-       echo "$WORKER_NUM" > .multi-claude/tmp/worker_ids/current_worker.id
+       mkdir -p $MULTI_CLAUDE_LOCAL/tmp/worker_ids
+       echo "$WORKER_NUM" > $MULTI_CLAUDE_LOCAL/tmp/worker_ids/current_worker.id
    fi
    ```
 
 3. **指示書と他のworkerの進捗確認**
    ```bash
    # 指示書読み込み
-   cat .multi-claude/tasks/worker_task.md
+   cat $MULTI_CLAUDE_LOCAL/tasks/worker_task.md
    
    # 他workerの進捗確認
    for i in 1 2 3; do
-       [ "$i" != "$WORKER_NUM" ] && [ -f ".multi-claude/context/worker${i}_progress.md" ] && \
-       echo "Worker${i}の進捗:" && tail -n 3 ".multi-claude/context/worker${i}_progress.md"
+       [ "$i" != "$WORKER_NUM" ] && [ -f "$MULTI_CLAUDE_LOCAL/context/worker${i}_progress.md" ] && \
+       echo "Worker${i}の進捗:" && tail -n 3 "$MULTI_CLAUDE_LOCAL/context/worker${i}_progress.md"
    done
    ```
 
 4. **進捗記録開始**
    ```bash
-   PROGRESS_FILE=".multi-claude/context/worker${WORKER_NUM}_progress.md"
+   PROGRESS_FILE="$MULTI_CLAUDE_LOCAL/context/worker${WORKER_NUM}_progress.md"
    echo "# Worker${WORKER_NUM} - 開始: $(date +%H:%M:%S)" > "$PROGRESS_FILE"
    echo "現在の作業: [具体的な作業内容]" >> "$PROGRESS_FILE"
    ```
@@ -87,21 +87,21 @@ cat .multi-claude/tasks/worker_task.md
 # 他のWORKERの進捗を確認
 echo "=== 他のWORKERの進捗確認 ==="
 for i in 1 2 3; do
-    if [ -f ".multi-claude/context/worker${i}_progress.md" ]; then
+    if [ -f "$MULTI_CLAUDE_LOCAL/context/worker${i}_progress.md" ]; then
         echo "Worker${i}の進捗:"
-        cat ".multi-claude/context/worker${i}_progress.md"
+        cat "$MULTI_CLAUDE_LOCAL/context/worker${i}_progress.md"
         echo "---"
     fi
 done
 
 # ワーカー番号をファイルから読み込み
-if [ -f .multi-claude/tmp/worker_ids/current_worker.id ]; then
-    WORKER_NUM=$(cat .multi-claude/tmp/worker_ids/current_worker.id)
+if [ -f $MULTI_CLAUDE_LOCAL/tmp/worker_ids/current_worker.id ]; then
+    WORKER_NUM=$(cat $MULTI_CLAUDE_LOCAL/tmp/worker_ids/current_worker.id)
     echo "自分はworker${WORKER_NUM}として認識されました（IDファイルから読み込み）"
     
     # 進捗ファイルを作成
-    mkdir -p .multi-claude/context
-    PROGRESS_FILE=".multi-claude/context/worker${WORKER_NUM}_progress.md"
+    mkdir -p $MULTI_CLAUDE_LOCAL/context
+    PROGRESS_FILE="$MULTI_CLAUDE_LOCAL/context/worker${WORKER_NUM}_progress.md"
     
     # 進捗を記録開始
     echo "# Worker${WORKER_NUM} 進捗状況" > "$PROGRESS_FILE"
@@ -109,17 +109,17 @@ if [ -f .multi-claude/tmp/worker_ids/current_worker.id ]; then
     echo "担当作業: [指示書から担当部分を記載]" >> "$PROGRESS_FILE"
     
     # デバッグ情報表示
-    echo "IDファイルの内容: $(cat .multi-claude/tmp/worker_ids/current_worker.id)"
+    echo "IDファイルの内容: $(cat $MULTI_CLAUDE_LOCAL/tmp/worker_ids/current_worker.id)"
     echo "現在のディレクトリ: $(pwd)"
 else
     echo "エラー: ワーカー番号が不明です"
-    echo ".multi-claude/tmp/worker_ids/current_worker.idが見つかりません"
+    echo "$MULTI_CLAUDE_LOCAL/tmp/worker_ids/current_worker.idが見つかりません"
     echo "BOSSからメッセージを受信していない可能性があります"
     
     # デバッグ情報
     echo "現在のディレクトリ: $(pwd)"
     echo "IDファイルの確認:"
-    ls -la .multi-claude/tmp/worker_ids/ 2>/dev/null || echo "worker_idsディレクトリが存在しません"
+    ls -la $MULTI_CLAUDE_LOCAL/tmp/worker_ids/ 2>/dev/null || echo "worker_idsディレクトリが存在しません"
     
     exit 1
 fi
@@ -132,20 +132,20 @@ echo "現在の状況: [作業の進捗を記載]" >> "$PROGRESS_FILE"
 echo "更新時刻: $(date)" >> "$PROGRESS_FILE"
 
 # 完了ファイル作成
-mkdir -p .multi-claude/tmp
-touch ".multi-claude/tmp/worker${WORKER_NUM}_done.txt"
-echo "完了ファイルを作成: .multi-claude/tmp/worker${WORKER_NUM}_done.txt"
+mkdir -p $MULTI_CLAUDE_LOCAL/tmp
+touch "$MULTI_CLAUDE_LOCAL/tmp/worker${WORKER_NUM}_done.txt"
+echo "完了ファイルを作成: $MULTI_CLAUDE_LOCAL/tmp/worker${WORKER_NUM}_done.txt"
 
 # 最終進捗を記録
 echo "完了時刻: $(date)" >> "$PROGRESS_FILE"
 echo "ステータス: 完了" >> "$PROGRESS_FILE"
 
 # 全員の完了確認
-if [ -f .multi-claude/tmp/worker1_done.txt ] && [ -f .multi-claude/tmp/worker2_done.txt ] && [ -f .multi-claude/tmp/worker3_done.txt ]; then
+if [ -f $MULTI_CLAUDE_LOCAL/tmp/worker1_done.txt ] && [ -f $MULTI_CLAUDE_LOCAL/tmp/worker2_done.txt ] && [ -f $MULTI_CLAUDE_LOCAL/tmp/worker3_done.txt ]; then
     echo "全員の作業完了を確認（最後の完了者として報告）"
     
     # 完了レポートを生成
-    cat > .multi-claude/tasks/completion_report.md << EOF
+    cat > $MULTI_CLAUDE_LOCAL/tasks/completion_report.md << EOF
 # 作業完了レポート
 
 ## 完了時刻
@@ -153,22 +153,22 @@ $(date)
 
 ## 各WORKERの作業内容
 ### Worker1
-$(cat .multi-claude/context/worker1_progress.md 2>/dev/null || echo "進捗ファイルなし")
+$(cat $MULTI_CLAUDE_LOCAL/context/worker1_progress.md 2>/dev/null || echo "進捗ファイルなし")
 
 ### Worker2
-$(cat .multi-claude/context/worker2_progress.md 2>/dev/null || echo "進捗ファイルなし")
+$(cat $MULTI_CLAUDE_LOCAL/context/worker2_progress.md 2>/dev/null || echo "進捗ファイルなし")
 
 ### Worker3
-$(cat .multi-claude/context/worker3_progress.md 2>/dev/null || echo "進捗ファイルなし")
+$(cat $MULTI_CLAUDE_LOCAL/context/worker3_progress.md 2>/dev/null || echo "進捗ファイルなし")
 EOF
     
-    $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "あなたはboss1です。worker${WORKER_NUM}より: 全ワーカーの作業が完了しました。詳細は.multi-claude/tasks/completion_report.mdを参照"
+    $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "あなたはboss1です。worker${WORKER_NUM}より: 全ワーカーの作業が完了しました。詳細は$MULTI_CLAUDE_LOCAL/tasks/completion_report.mdを参照"
     
     # 完了ファイルをクリア（次回の実行のため）
-    rm -f .multi-claude/tmp/worker*_done.txt
+    rm -f $MULTI_CLAUDE_LOCAL/tmp/worker*_done.txt
 else
     echo "他のWORKERの完了を待機中..."
-    ls -la .multi-claude/tmp/worker*_done.txt 2>/dev/null || echo "まだ完了ファイルがありません"
+    ls -la $MULTI_CLAUDE_LOCAL/tmp/worker*_done.txt 2>/dev/null || echo "まだ完了ファイルがありません"
 fi
 ```
 
@@ -183,16 +183,16 @@ echo "次の作業: [具体的な内容]" >> "$PROGRESS_FILE"
 ## ✅ 作業完了時のフロー
 ```bash
 # 1. 完了ファイル作成
-touch ".multi-claude/tmp/worker${WORKER_NUM}_done.txt"
+touch "$MULTI_CLAUDE_LOCAL/tmp/worker${WORKER_NUM}_done.txt"
 echo "完了: $(date)" >> "$PROGRESS_FILE"
 
 # 2. 全員完了確認
-if [ -f .multi-claude/tmp/worker1_done.txt ] && \
-   [ -f .multi-claude/tmp/worker2_done.txt ] && \
-   [ -f .multi-claude/tmp/worker3_done.txt ]; then
+if [ -f $MULTI_CLAUDE_LOCAL/tmp/worker1_done.txt ] && \
+   [ -f $MULTI_CLAUDE_LOCAL/tmp/worker2_done.txt ] && \
+   [ -f $MULTI_CLAUDE_LOCAL/tmp/worker3_done.txt ]; then
     echo "🎉 全員完了！BOSSに報告します"
-    $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "全workerの作業完了。詳細:.multi-claude/tasks/completion_report.md"
-    rm -f .multi-claude/tmp/worker*_done.txt
+    $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "全workerの作業完了。詳細:$MULTI_CLAUDE_LOCAL/tasks/completion_report.md"
+    rm -f $MULTI_CLAUDE_LOCAL/tmp/worker*_done.txt
 fi
 ```
 

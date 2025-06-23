@@ -18,7 +18,7 @@ fi
 tmux list-panes -t multiagent -F "#{pane_index}: #{pane_title}"
 
 # 3. タスクディレクトリ初期化（起動メッセージは送信しない）
-mkdir -p .multi-claude/{tasks,context,tmp}
+mkdir -p $MULTI_CLAUDE_LOCAL/{tasks,context,tmp}
 echo "✅ BOSS準備完了"
 ```
 
@@ -36,13 +36,13 @@ echo "✅ BOSS準備完了"
 2. **タスク内容を記録**
    ```bash
    TIMESTAMP=$(date +%Y-%m-%d_%H:%M:%S)
-   echo "[受信時刻: $TIMESTAMP]" > .multi-claude/tasks/current_task.md
-   echo "[タスク内容]" >> .multi-claude/tasks/current_task.md
+   echo "[受信時刻: $TIMESTAMP]" > $MULTI_CLAUDE_LOCAL/tasks/current_task.md
+   echo "[タスク内容]" >> $MULTI_CLAUDE_LOCAL/tasks/current_task.md
    ```
 
 3. **WORKER用指示書を緊急生成**
    ```bash
-   cat > .multi-claude/tasks/worker_task.md << 'EOF'
+   cat > $MULTI_CLAUDE_LOCAL/tasks/worker_task.md << 'EOF'
    # 👷 WORKER指示書（緊急生成）
    
    ## タスク概要
@@ -50,7 +50,7 @@ echo "✅ BOSS準備完了"
    
    ## 必須事項
    1. 作業開始前に他のworkerの進捗を確認
-   2. 進捗を.multi-claude/context/worker[番号]_progress.mdに記録
+   2. 進捗を$MULTI_CLAUDE_LOCAL/context/worker[番号]_progress.mdに記録
    3. 完了後はboss1に報告
    EOF
    ```
@@ -58,18 +58,18 @@ echo "✅ BOSS準備完了"
 4. **全WORKERに同時指示**
    ```bash
    for i in 1 2 3; do
-       $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker$i "【緊急タスク】worker$iとして.multi-claude/tasks/worker_task.mdを確認して即実行"
+       $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker$i "【緊急タスク】worker$iとして$MULTI_CLAUDE_LOCAL/tasks/worker_task.mdを確認して即実行"
    done
    ```
 
 ## タスク整理と指示書生成例
 ```bash
 # タスク内容を整理して記録
-mkdir -p .multi-claude/tasks
-echo "[受信したタスク概要]" > .multi-claude/tasks/current_task.md
+mkdir -p $MULTI_CLAUDE_LOCAL/tasks
+echo "[受信したタスク概要]" > $MULTI_CLAUDE_LOCAL/tasks/current_task.md
 
 # WORKER用指示書を動的生成
-cat > .multi-claude/tasks/worker_task.md << 'EOF'
+cat > $MULTI_CLAUDE_LOCAL/tasks/worker_task.md << 'EOF'
 # 👷 WORKER指示書（動的生成）
 
 ## 今回のタスク
@@ -82,39 +82,39 @@ cat > .multi-claude/tasks/worker_task.md << 'EOF'
 
 ## 進捗共有
 作業中は以下のファイルに進捗を記録してください：
-.multi-claude/context/worker[番号]_progress.md
+$MULTI_CLAUDE_LOCAL/context/worker[番号]_progress.md
 
 ## 完了確認
 [完了確認手順]
 EOF
 
 # 作業コンテキスト共有ディレクトリを作成
-mkdir -p .multi-claude/context
+mkdir -p $MULTI_CLAUDE_LOCAL/context
 
 # WORKERに指示（役割確認付き）
-$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker1 "あなたはworker1です。タスク: .multi-claude/tasks/worker_task.mdを確認して実行。進捗は.multi-claude/context/worker1_progress.mdに記録"
-$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker2 "あなたはworker2です。タスク: .multi-claude/tasks/worker_task.mdを確認して実行。進捗は.multi-claude/context/worker2_progress.mdに記録"
-$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker3 "あなたはworker3です。タスク: .multi-claude/tasks/worker_task.mdを確認して実行。進捗は.multi-claude/context/worker3_progress.mdに記録"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker1 "あなたはworker1です。タスク: $MULTI_CLAUDE_LOCAL/tasks/worker_task.mdを確認して実行。進捗は$MULTI_CLAUDE_LOCAL/context/worker1_progress.mdに記録"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker2 "あなたはworker2です。タスク: $MULTI_CLAUDE_LOCAL/tasks/worker_task.mdを確認して実行。進捗は$MULTI_CLAUDE_LOCAL/context/worker2_progress.mdに記録"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker3 "あなたはworker3です。タスク: $MULTI_CLAUDE_LOCAL/tasks/worker_task.mdを確認して実行。進捗は$MULTI_CLAUDE_LOCAL/context/worker3_progress.mdに記録"
 
 # 完了後PRESIDENTに報告（役割確認付き）
-$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "あなたはPRESIDENTです。boss1より: 全ワーカーのタスク完了を確認しました。詳細は.multi-claude/tasks/completion_report.mdを参照"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "あなたはPRESIDENTです。boss1より: 全ワーカーのタスク完了を確認しました。詳細は$MULTI_CLAUDE_LOCAL/tasks/completion_report.mdを参照"
 ```
 
 ## 📋 定期実行タスク（3分ごと）
 ```bash
 # 1. WORKERの進捗確認
 for i in 1 2 3; do
-    if [ -f ".multi-claude/context/worker${i}_progress.md" ]; then
+    if [ -f "$MULTI_CLAUDE_LOCAL/context/worker${i}_progress.md" ]; then
         echo "Worker${i}の進捗:"
-        tail -n 5 ".multi-claude/context/worker${i}_progress.md"
+        tail -n 5 "$MULTI_CLAUDE_LOCAL/context/worker${i}_progress.md"
     fi
 done
 
 # 2. PRESIDENTに進捗報告（役割確認付き）
-$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "あなたはPRESIDENTです。boss1より【進捗報告】全体の[XX]%完了。詳細は.multi-claude/tasks/progress_summary.md参照"
+$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh president "あなたはPRESIDENTです。boss1より【進捗報告】全体の[XX]%完了。詳細は$MULTI_CLAUDE_LOCAL/tasks/progress_summary.md参照"
 
 # 3. タイムアウト確認（10分経過したタスクを警告）
-find .multi-claude/tmp -name "worker*_done.txt" -mmin +10 -exec echo "⚠️ 遅延: {}" \;
+find $MULTI_CLAUDE_LOCAL/tmp -name "worker*_done.txt" -mmin +10 -exec echo "⚠️ 遅延: {}" \;
 ```
 
 ## ❗ 重要な制約事項
@@ -128,7 +128,7 @@ find .multi-claude/tmp -name "worker*_done.txt" -mmin +10 -exec echo "⚠️ 遅
 # WORKERが応答しない場合
 for i in 1 2 3; do
     echo "worker$iの状態確認..."
-    if [ ! -f ".multi-claude/context/worker${i}_progress.md" ]; then
+    if [ ! -f "$MULTI_CLAUDE_LOCAL/context/worker${i}_progress.md" ]; then
         $MULTI_CLAUDE_GLOBAL/bin/agent-send.sh worker$i "【再送信】至急応答してください"
     fi
 done
