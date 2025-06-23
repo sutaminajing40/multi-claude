@@ -57,6 +57,13 @@ if [ -f "$HOME/.multi-claude/bin/agent-send.sh" ]; then
     log_info "agent-send.shをローカルにコピー完了"
 fi
 
+# health-check.shをローカルにコピー
+if [ -f "$HOME/.multi-claude/bin/health-check.sh" ]; then
+    cp "$HOME/.multi-claude/bin/health-check.sh" "$MULTI_CLAUDE_LOCAL/bin/health-check.sh"
+    chmod +x "$MULTI_CLAUDE_LOCAL/bin/health-check.sh"
+    log_info "health-check.shをローカルにコピー完了"
+fi
+
 log_success "✅ クリーンアップ完了"
 echo ""
 

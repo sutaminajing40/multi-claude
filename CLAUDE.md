@@ -168,8 +168,8 @@ ls -la "$MULTI_CLAUDE_LOCAL/session/tmp/worker*_done.txt"        # 完了ファ�
 ls -la "$MULTI_CLAUDE_LOCAL/context/worker*_progress.md"         # 進捗ファイル確認
 
 # ヘルスチェック（新機能）
-$MULTI_CLAUDE_GLOBAL/bin/health-check.sh        # システム状態確認
-$MULTI_CLAUDE_GLOBAL/bin/health-check.sh --watch # 定期監視モード（5分間隔）
+$MULTI_CLAUDE_LOCAL/bin/health-check.sh        # システム状態確認
+$MULTI_CLAUDE_LOCAL/bin/health-check.sh --watch # 定期監視モード（5分間隔）
 ```
 
 ## 改善されたシステム特徴

@@ -29,8 +29,8 @@ Multi-Claudeは、複数のClaude Codeインスタンスが協調して動作す
 
 ```bash
 # プロジェクトルートから実行
-$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh [相手] "[メッセージ]"
-# 注: MULTI_CLAUDE_GLOBAL は multi-claude 起動時に自動設定されます
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh [相手] "[メッセージ]"
+# 注: MULTI_CLAUDE_LOCAL は multi-claude 起動時に自動設定されます
 ```
 
 ### 新しい基本フロー
@@ -77,8 +77,8 @@ $MULTI_CLAUDE_LOCAL/
 
 ```bash
 # エージェント間通信
-$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh boss1 "メッセージ"
-$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh --list  # 利用可能エージェント一覧
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh boss1 "メッセージ"
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh --list  # 利用可能エージェント一覧
 
 # ログ確認
 tail -f $MULTI_CLAUDE_LOCAL/session/logs/send_log.txt      # リアルタイムログ監視
@@ -103,7 +103,7 @@ multi-claude --help                                  # ヘルプ表示
 ### エージェントが応答しない場合
 ```bash
 # システム状態確認
-$MULTI_CLAUDE_GLOBAL/bin/health-check.sh
+$MULTI_CLAUDE_LOCAL/bin/health-check.sh
 
 # tmuxセッション確認
 tmux list-panes -t multiagent

@@ -126,8 +126,8 @@ Multi-Claudeは、複数のClaude Codeインスタンスが協調して動作す
 
 ## メッセージ送信
 ```bash
-$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh [相手] "[メッセージ]"
-# 注: MULTI_CLAUDE_GLOBAL は multi-claude 起動時に自動設定されます
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh [相手] "[メッセージ]"
+# 注: MULTI_CLAUDE_LOCAL は multi-claude 起動時に自動設定されます
 ```
 
 ## 新しい基本フロー
@@ -190,7 +190,7 @@ echo ""
 echo "   # Multi-Claude エイリアス"
 echo "   alias mc='multi-claude'"
 echo "   alias mc-exit='multi-claude --exit'"
-echo "   alias mc-send='\$MULTI_CLAUDE_GLOBAL/bin/agent-send.sh'"
+echo "   alias mc-send='\$MULTI_CLAUDE_LOCAL/bin/agent-send.sh'"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "設定後は、ターミナルを再起動するか以下を実行してください："
