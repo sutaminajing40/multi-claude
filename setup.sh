@@ -67,24 +67,30 @@ fi
 log_success "✅ クリーンアップ完了"
 echo ""
 
-# STEP 2: multiagentセッション作成（4ペイン：boss1 + worker1,2,3）
-log_info "📺 multiagentセッション作成開始 (4ペイン)..."
+# STEP 2: multiagentセッション作成（6ペイン：boss1, architect, qa + worker1,2,3）
+log_info "📺 multiagentセッション作成開始 (6ペイン - 3x2レイアウト)..."
 
 # 最初のペイン作成
 tmux new-session -d -s multiagent -n "agents"
 
-# 2x2グリッド作成（合計4ペイン）
-tmux split-window -h -t "multiagent:0"      # 水平分割（左右）
+# 3x2グリッド作成（合計6ペイン）
+# まず3列に分割
+tmux split-window -h -t "multiagent:0" -p 66   # 最初の分割（33%:66%）
+tmux split-window -h -t "multiagent:0.1" -p 50 # 残り66%を半分に（33%:33%）
+
+# 各列を上下に分割
 tmux select-pane -t "multiagent:0.0"
-tmux split-window -v                        # 左側を垂直分割
+tmux split-window -v -p 50                      # 左列を上下に分割
 tmux select-pane -t "multiagent:0.2"
-tmux split-window -v                        # 右側を垂直分割
+tmux split-window -v -p 50                      # 中列を上下に分割
+tmux select-pane -t "multiagent:0.4"
+tmux split-window -v -p 50                      # 右列を上下に分割
 
 # ペインタイトル設定
 log_info "ペインタイトル設定中..."
-PANE_TITLES=("boss1" "worker1" "worker2" "worker3")
+PANE_TITLES=("boss1" "worker1" "architect" "worker2" "qa" "worker3")
 
-for i in {0..3}; do
+for i in {0..5}; do
     tmux select-pane -t "multiagent:0.$i" -T "${PANE_TITLES[$i]}"
     
     # 作業ディレクトリ設定
@@ -135,11 +141,15 @@ echo ""
 
 # ペイン構成表示
 echo "📋 ペイン構成:"
-echo "  multiagentセッション（4ペイン）:"
-echo "    Pane 0: boss1     (チームリーダー)"
-echo "    Pane 1: worker1   (実行担当者A)"
-echo "    Pane 2: worker2   (実行担当者B)"
-echo "    Pane 3: worker3   (実行担当者C)"
+echo "  multiagentセッション（6ペイン - 3x2レイアウト）:"
+echo "    上段:"
+echo "      Pane 0: boss1     (チームリーダー)"
+echo "      Pane 2: architect (システム設計者)"
+echo "      Pane 4: qa        (品質保証エンジニア)"
+echo "    下段:"
+echo "      Pane 1: worker1   (実行担当者A)"
+echo "      Pane 3: worker2   (実行担当者B)"
+echo "      Pane 5: worker3   (実行担当者C)"
 echo ""
 echo "  presidentセッション（1ペイン）:"
 echo "    Pane 0: PRESIDENT (プロジェクト統括)"
@@ -156,11 +166,13 @@ echo "  2. 🤖 Claude Code起動:"
 echo "     # 手順1: President認証"
 echo "     tmux send-keys -t president 'claude' C-m"
 echo "     # 手順2: 認証後、multiagent一括起動"
-echo "     for i in {0..3}; do tmux send-keys -t multiagent:0.\$i 'claude' C-m; done"
+echo "     for i in {0..5}; do tmux send-keys -t multiagent:0.\$i 'claude' C-m; done"
 echo ""
 echo "  3. 📜 指示書確認:"
 echo "     PRESIDENT: \$MULTI_CLAUDE_LOCAL/instructions/president_dynamic.md"
 echo "     boss1: \$MULTI_CLAUDE_LOCAL/instructions/boss_dynamic.md"
+echo "     architect: \$MULTI_CLAUDE_LOCAL/instructions/architect_dynamic.md"
+echo "     qa: \$MULTI_CLAUDE_LOCAL/instructions/qa_dynamic.md"
 echo "     worker1,2,3: \$MULTI_CLAUDE_LOCAL/instructions/worker_dynamic.md"
 echo "     システム構造: CLAUDE.md"
 echo ""

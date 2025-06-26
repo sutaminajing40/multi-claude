@@ -1,332 +1,168 @@
-# CLAUDE.md
+# 🤖 Multi-Claude システム設定
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## システム概要
 
-## 🎯 あなたの使命
+Multi-Claudeは、複数のClaude Codeインスタンスが協調して動作するマルチエージェント開発システムです。
 
-**あなたは最高のマルチエージェントな開発システムを作成するエージェントです。**
+### プロジェクト情報
+- **起動日時**: 2025-06-24 15:47:27
+- **プロジェクトパス**: /Users/soh/dev/multi-agent-dev/multi-claude-dev
+- **環境変数**:
+  - `MULTI_CLAUDE_GLOBAL`: /Users/soh/.multi-claude
+  - `MULTI_CLAUDE_LOCAL`: /Users/soh/dev/multi-agent-dev/multi-claude-dev/.multi-claude
 
-### 継続的な改善
-ユーザーからの指示で学びがあればそれも CLAUDE.mdに追記してアップデートしてください。このドキュメントは生きたドキュメントとして、プロジェクトと共に成長していきます。
+## Agent Communication System
 
-### タスク管理の鉄則
-仕事を始める前に、TODO.mdに書き出して、そこで管理してください。これにより：
-- タスクの見える化
-- 優先順位の明確化
-- 進捗の追跡
-- チーム間での作業共有
+### エージェント構成
 
-が可能になります。
+- **PRESIDENT** (別セッション): 統括責任者 + タスク概要伝達
+- **boss1** (multiagent:0.0): チームリーダー + 要件整理・指示書生成
+- **worker1** (multiagent:0.1): 実装担当 + 進捗共有
+- **architect** (multiagent:0.2): 設計・アーキテクチャ担当
+- **worker2** (multiagent:0.3): 実装担当 + 進捗共有
+- **qa** (multiagent:0.4): 品質保証・テスト担当
+- **worker3** (multiagent:0.5): 実装担当 + 進捗共有
 
-# 🚨 重要: Multi-Claude システムの使用が必須です
+### あなたの役割（動的版）
 
-**注意: このプロジェクトでは、すべてのタスクでMulti-Claude システムの使用が必須です。単独での作業は禁止されています。**
+- **PRESIDENT**: @$MULTI_CLAUDE_LOCAL/instructions/president_dynamic.md
+- **boss1**: @$MULTI_CLAUDE_LOCAL/instructions/boss_dynamic.md
+- **worker1,2,3**: @$MULTI_CLAUDE_LOCAL/instructions/worker_dynamic.md
+- **architect**: @$MULTI_CLAUDE_LOCAL/instructions/architect_dynamic.md
+- **qa**: @$MULTI_CLAUDE_LOCAL/instructions/qa_dynamic.md
 
-## 必須事項チェックリスト
-- [ ] multi-claudeが起動していることを確認 (`tmux list-sessions`で確認)
-- [ ] 自分の役割を確認 (PRESIDENT/boss1/worker1-3)
-- [ ] タスク受信時は必ず他のエージェントと連携
-- [ ] 単独でコード変更を行わない
-- [ ] 必ず動的指示書を生成・確認してから作業開始
-
-# 🤖 Multi-Claude システム
-
-Multi-Claude Communication Systemは、複数のClaude Codeインスタンスがtmuxセッション内で協調動作し、タスクを分散処理するマルチエージェントシステムです。
-
-## アーキテクチャ
-
-```
-📊 PRESIDENT セッション (1ペイン)
-└── PRESIDENT: ユーザー対話・タスク概要伝達
-
-📊 multiagent セッション (4ペイン)  
-├── boss1: 要件整理・指示書生成・タスク管理
-├── worker1: 実行担当者A（進捗共有）
-├── worker2: 実行担当者B（進捗共有）
-└── worker3: 実行担当者C（進捗共有）
-
-通信フロー: ユーザー → PRESIDENT → boss1 → workers → boss1 → PRESIDENT
-```
-
-## あなたの役割とアクションフロー
-
-### 役割の自動判定
-このシステムでは、あなたがどのtmuxペインで実行されているかによって役割が決まります：
-
-- **president:0** → あなたは **PRESIDENT** です
-- **multiagent:0.0** → あなたは **boss1** です
-- **multiagent:0.1** → あなたは **worker1** です
-- **multiagent:0.2** → あなたは **worker2** です
-- **multiagent:0.3** → あなたは **worker3** です
-
-### 起動時の必須アクション
-1. **役割確認**: `echo $TMUX_PANE`で自分の役割を確認
-2. **システム状態確認**: `tmux list-sessions`でmulti-claudeが起動中か確認
-3. **指示書確認**: 自分の役割に応じた指示書を必ず読み込む
-   ```bash
-   # PRESIDENTの場合
-   cat .multi-claude/instructions/president_dynamic.md
-   
-   # boss1の場合
-   cat .multi-claude/instructions/boss_dynamic.md
-   
-   # worker1-3の場合
-   cat .multi-claude/instructions/worker_dynamic.md
-   ```
-
-### タスク受信時の必須フロー
-1. **PRESIDENTがユーザーからタスクを受けた場合**:
-   - TODO.mdにタスクを書き出して整理
-   - 必ず動的指示書を生成してboss1に送信
-   - 単独でコード変更は行わない
-   
-2. **boss1がタスクを受けた場合**:
-   - TODO.mdでタスクを細分化
-   - 必ず指示書を読み込んでからworkerに指示
-   - 自分で実装は行わない
-   
-3. **workerがタスクを受けた場合**:
-   - TODO.mdで自分の担当タスクを確認
-   - 必ず指示書を確認してから作業開始
-   - 進捗を必ず共有ファイルに記録
-
-各役割の詳細は `.multi-claude/instructions/` ディレクトリの対応するファイルを参照してください：
-- PRESIDENT: `.multi-claude/instructions/president_dynamic.md`
-- boss1: `.multi-claude/instructions/boss_dynamic.md`
-- worker1,2,3: `.multi-claude/instructions/worker_dynamic.md`
-
-## 環境変数
-
-multi-claude起動時に以下の環境変数が自動設定されます：
-- `MULTI_CLAUDE_GLOBAL`: グローバルインストールディレクトリ（実行ファイル・指示書）
-- `MULTI_CLAUDE_LOCAL`: ローカルプロジェクトディレクトリ（プロジェクト固有データ）
-
-## 開発コマンド
-
-### タスク管理
-```bash
-# TODO.mdの作成・更新
-echo "## 本日のタスク" > TODO.md
-echo "- [ ] タスク1: 機能Aの実装" >> TODO.md
-echo "- [ ] タスク2: テストの作成" >> TODO.md
-echo "- [ ] タスク3: ドキュメント更新" >> TODO.md
-
-# 完了したタスクのマーク
-sed -i 's/- \[ \] タスク1/- \[x\] タスク1/' TODO.md
-
-# タスクの進捗確認
-cat TODO.md | grep -E "^\- \["
-```
-
-### 💡 重要: ファイルパスについて
-**Claude Codeはディレクトリを移動することがあるため、すべての `.multi-claude/` ディレクトリ参照は `$MULTI_CLAUDE_LOCAL` 環境変数を使用して絶対パスでアクセスしてください。**
+### メッセージ送信
 
 ```bash
-# ✅ 正しい例
-cat "$MULTI_CLAUDE_LOCAL/tasks/current_task.md"
-mkdir -p "$MULTI_CLAUDE_LOCAL/context"
-touch "$MULTI_CLAUDE_LOCAL/session/tmp/worker1_done.txt"
-
-# ❌ 間違った例（使用しないでください）
-cat .multi-claude/tasks/current_task.md
-mkdir -p .multi-claude/context
-touch ./.multi-claude/session/tmp/worker1_done.txt
+# プロジェクトルートから実行
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh [相手] "[メッセージ]"
+# 注: MULTI_CLAUDE_LOCAL は multi-claude 起動時に自動設定されます
 ```
 
-### システム操作
-```bash
-# 起動・終了
-multi-claude                               # システム起動
-multi-claude --exit                        # 完全終了
-multi-claude --dangerously-skip-permissions # 権限確認スキップ起動
+### 新しい基本フロー
 
-# エージェント間通信
-$MULTI_CLAUDE_LOCAL/bin/agent-send.sh [エージェント名] "[メッセージ]"
-$MULTI_CLAUDE_LOCAL/bin/agent-send.sh --list  # 利用可能エージェント一覧
-# 注: MULTI_CLAUDE_GLOBAL は multi-claude 起動時に自動設定されます
+```
+ユーザー 
+  ↓
+president → boss → architect設計 → qaレビュー → architect設計反映（レビュー内容が問題なくなるまで繰り返す）
+  ↓
+boss設計内容を確認 → worker1/2/3に割り振り → boss進捗内容を確認 → 実装完了
+  ↓
+qa実施 → qa未完了なら実装続き
 ```
 
-### テスト実行
-```bash
-cd tests && ./test_claude_detection.sh              # Claude検出テスト
-cd tests && ./test_dangerously_skip_permissions.sh  # オプションテスト
-cd tests && ./test_terminal_control.sh              # ターミナル制御テスト
+詳細フロー：
+1. **president**: ユーザー要件を受け取り、タスク概要を把握
+2. **boss**: 要件を整理し、指示書を生成
+3. **architect**: システム設計を作成
+4. **qa**: 設計レビューを実施
+5. **architect**: レビュー結果を反映（承認まで繰り返し）
+6. **boss**: 最終設計を確認し、workerに作業を割り振り
+7. **worker1/2/3**: 並行して実装作業
+8. **boss**: 進捗を確認
+9. **qa**: 実装内容のテストを実施
+10. 未完了項目があれば実装を継続
+
+### 改善されたシステム特徴
+
+1. **役割分担の最適化**
+   - PRESIDENT: ユーザーとの対話に集中、全体進捗管理
+   - BOSS: 要件整理と5人のエージェントへの指示書生成
+   - ARCHITECT: システム設計とアーキテクチャ決定
+   - WORKER1/2/3: 実装担当、進捗共有
+   - QA: テスト設計・実装、品質保証
+
+2. **効率的な開発フロー**
+   - 設計フェーズ: architectが全体設計を担当
+   - 実装フェーズ: 3人のworkerが並行実装
+   - 品質保証フェーズ: qaがテストを同時進行
+   - 統合フェーズ: worker3が統合とデバッグを担当
+
+3. **クリーンなファイル配置**
+   - すべての作業ファイルは `$MULTI_CLAUDE_LOCAL/` フォルダ内に配置
+   - プロジェクトルートを汚さない設計
+
+4. **エージェント間コンテキスト共有**
+   - 各エージェントが進捗を `$MULTI_CLAUDE_LOCAL/context/[エージェント名]_progress.md` に記録
+   - 作業の重複を防ぎ、効率的な協調作業を実現
+   - architectの設計書を全員が参照可能
+
+## プロジェクト固有のデータ配置
+
 ```
-
-### デバッグ
-```bash
-# tmuxセッション管理
-tmux list-sessions                    # 全セッション表示
-tmux list-panes -t multiagent         # ペイン構成確認
-tmux attach-session -t president      # presidentセッションにアタッチ
-tmux kill-server                      # 全セッション強制終了
-
-# ログ確認
-cat "$MULTI_CLAUDE_LOCAL/session/logs/send_log.txt"              # 全送信ログ
-grep "boss1" "$MULTI_CLAUDE_LOCAL/session/logs/send_log.txt"     # 特定エージェントのログ
-ls -la "$MULTI_CLAUDE_LOCAL/session/tmp/worker*_done.txt"        # 完了ファイル確認
-ls -la "$MULTI_CLAUDE_LOCAL/context/worker*_progress.md"         # 進捗ファイル確認
-
-# ヘルスチェック（新機能）
-$MULTI_CLAUDE_LOCAL/bin/health-check.sh        # システム状態確認
-$MULTI_CLAUDE_LOCAL/bin/health-check.sh --watch # 定期監視モード（5分間隔）
-```
-
-## 改善されたシステム特徴
-
-### 1. 役割分担の最適化
-- **PRESIDENT**: ユーザーとの対話に集中し、タスク概要を素早くBOSSに伝達
-- **BOSS**: 詳細な要件整理と具体的な指示書生成を担当
-- **WORKER**: 進捗を共有しながら効率的に作業を実行
-
-### 2. クリーンなファイル配置
-
-**グローバル（$HOME/.multi-claude/）** - 共有リソース
-```
-$HOME/.multi-claude/
-├── bin/              # 実行スクリプト（共有）
-│   ├── setup.sh
-│   ├── agent-send.sh
-│   └── health-check.sh
-├── instructions/     # 指示書テンプレート（初回コピー元）
-│   ├── president_dynamic.md
-│   ├── boss_dynamic.md
-│   └── worker_dynamic.md
-└── share/            # 共有リソース
-    └── CLAUDE_template.md
-```
-
-**ローカル（$MULTI_CLAUDE_LOCAL）** - プロジェクト固有
-```
-$MULTI_CLAUDE_LOCAL/  # 絶対パス: $(pwd)/.multi-claude
+$MULTI_CLAUDE_LOCAL/
 ├── instructions/     # 役割定義・指示書（プロジェクト固有）
-│   ├── president_dynamic.md
-│   ├── boss_dynamic.md
-│   └── worker_dynamic.md
+│   ├── president_dynamic.md  # カスタマイズ可能
+│   ├── boss_dynamic.md       # カスタマイズ可能
+│   ├── worker_dynamic.md     # カスタマイズ可能
+│   ├── architect_dynamic.md  # カスタマイズ可能
+│   └── qa_dynamic.md         # カスタマイズ可能
 ├── session/          # セッション固有データ
-│   ├── tmp/          # 一時ファイル
-│   │   ├── worker*_done.txt
-│   │   └── worker_ids/
-│   ├── logs/         # ログファイル
-│   │   └── send_log.txt
+│   ├── tmp/          # 一時ファイル（ワーカー完了状態など）
+│   ├── logs/         # 通信ログ
 │   └── runtime/      # ランタイム情報
-├── context/          # ワーカー進捗共有
-│   └── worker*_progress.md
+├── context/          # エージェント進捗共有
+│   ├── worker1_progress.md
+│   ├── architect_progress.md
+│   ├── worker2_progress.md
+│   ├── qa_progress.md
+│   └── worker3_progress.md
 ├── tasks/            # タスク管理
-│   ├── current_task.md
-│   ├── boss_task.md      # 動的生成
-│   ├── worker_task.md    # 動的生成
-│   └── completion_report.md
+│   ├── current_task.md      # 現在のタスク
+│   ├── worker_task.md       # WORKER用指示書
+│   ├── design_doc.md        # architect作成の設計書
+│   ├── test_plan.md         # qa作成のテスト計画
+│   └── completion_report.md # 完了レポート
 └── config/           # プロジェクト設定
 ```
 
-### 3. ワーカー間コンテキスト共有
-- 各ワーカーが進捗を `$MULTI_CLAUDE_LOCAL/context/worker[番号]_progress.md` に記録
-- 作業開始前に他のワーカーの進捗を確認
-- 作業の重複を防ぎ、効率的な協調作業を実現
+**注**: 指示書ファイルは初回起動時にグローバルからコピーされます。プロジェクト固有の要件に合わせて自由に編集できます。
 
-## リリースワークフロー
+## クイックコマンドリファレンス
 
-### 自動リリース（推奨）
 ```bash
-git tag v1.0.X -m "Release: 変更内容"
-git push origin v1.0.X
+# エージェント間通信
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh boss1 "メッセージ"
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh worker1 "メッセージ"
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh --list  # 利用可能エージェント一覧
 
-# 15-18秒後に自動的にHomebrewで利用可能
-brew update && brew upgrade multi-claude
+# architect, qaへの直接通信（agent-send.sh未対応の場合）
+tmux send-keys -t multiagent:0.2 "メッセージ" C-m  # architectへ
+tmux send-keys -t multiagent:0.4 "メッセージ" C-m  # qaへ
+
+# ログ確認
+tail -f $MULTI_CLAUDE_LOCAL/session/logs/send_log.txt      # リアルタイムログ監視
+grep "worker1" $MULTI_CLAUDE_LOCAL/session/logs/send_log.txt # 特定エージェントのログ
+
+# タスク・進捗確認
+cat $MULTI_CLAUDE_LOCAL/tasks/current_task.md              # 現在のタスク
+ls -la $MULTI_CLAUDE_LOCAL/context/*_progress.md           # 全エージェント進捗
+cat $MULTI_CLAUDE_LOCAL/tasks/design_doc.md                # 設計ドキュメント
+cat $MULTI_CLAUDE_LOCAL/tasks/test_plan.md                 # テスト計画
+
+# セッション管理
+tmux list-sessions                                   # セッション一覧
+tmux attach-session -t president                     # PRESIDENTに接続
+tmux attach-session -t multiagent                    # MULTIAGENTに接続
+
+# システム制御
+multi-claude --exit                                  # システム完全終了
+multi-claude --help                                  # ヘルプ表示
 ```
 
-### GitHub Actions設定
-- **必須シークレット**: `HOMEBREW_GITHUB_TOKEN` (homebrew-multi-claudeリポジトリへの`repo`権限)
-- **自動処理**: tarball生成、SHA256計算、Formula更新
+## トラブルシューティング
 
-## 技術仕様
-
-### Claude Code検出優先順位
-1. `$HOME/.claude/local/claude` (直接パス)
-2. `which claude` (PATH検索)
-3. `command -v claude` (bashビルトイン)
-4. `claude-code`, `claude.code` (バリエーション)
-
-### コマンドラインオプション
-- `--exit`: システム完全終了
-- `--help`: ヘルプ表示
-- `--version`: バージョン情報（現在: v1.1.0）
-- `--dangerously-skip-permissions`: 権限確認スキップ
-
-### トラブルシューティング
-
-#### Claude Codeが見つからない場合
+### エージェントが応答しない場合
 ```bash
-# 実行ファイル検索
-find "$HOME" -name "claude*" -type f -perm +111 2>/dev/null | grep -E "(bin|\.local|\.claude)"
+# システム状態確認
+$MULTI_CLAUDE_LOCAL/bin/health-check.sh
 
-# PATH追加
-export PATH="$HOME/.claude/local:$PATH"
+# tmuxセッション確認
+tmux list-panes -t multiagent
+tmux list-panes -t president
 ```
 
-#### 初回セットアップ
-Homebrewインストール時、初回実行で必要なファイルを自動コピー。既存のCLAUDE.mdがある場合はMulti-Claude設定を追加。
+### ログの場所
+- 通信ログ: `$MULTI_CLAUDE_LOCAL/session/logs/send_log.txt`
+- エラーログ: 各tmuxペイン内で確認
 
-## 開発作業完了時の注意事項
-
-### こまめなプッシュの推奨
-作業が完了したら、こまめにプッシュすることを推奨します：
-```bash
-git add .
-git commit -m "feat: 機能の説明"
-git push origin main
-```
-
-### 自動brewアップデート
-Gitタグをプッシュすると、GitHub Actionsが自動的にHomebrewのFormulaを更新します：
-```bash
-# バージョンタグの作成とプッシュ
-git tag v1.X.X -m "Release: 変更内容の説明"
-git push origin v1.X.X
-
-# 約15-18秒後に自動的にHomebrewで利用可能
-brew update && brew upgrade multi-claude
-```
-
-これにより、新機能や修正を素早くリリースし、ユーザーが最新版を利用できるようになります。
-
-## テスト実行方法
-
-### ユニットテスト
-```bash
-# 役割判定システムのテスト
-cd tests/role-detection/unit && ./test_role_detection_env.sh
-
-# 全体的なテスト実行
-cd tests && ./test_integration.sh
-cd tests && ./test_final_integration.sh
-```
-
-### 単体機能テスト
-```bash
-# 主要機能のテスト
-cd tests && ./test_agent_send_placement.sh   # エージェント送信テスト
-cd tests && ./test_worker_completion.sh       # ワーカー完了管理テスト
-cd tests && ./test_environment_detection.sh   # 環境検出テスト
-```
-
-## 開発時の注意事項
-
-### bashスクリプトの互換性
-- macOS（Darwin）とLinuxの両方で動作することを確認
-- `set -e`を使用してエラー時に即座に停止
-- tmuxコマンドの存在確認を必ず行う
-
-### 役割判定の優先順位
-1. 環境変数 `MULTI_CLAUDE_ROLE`
-2. 役割ファイル `.multi-claude/runtime/[session-id]/my-role`
-3. tmuxペインタイトル
-4. tmuxペイン番号による自動判定
-
-### ファイル配置規則
-- 実行スクリプト: `.multi-claude/bin/`
-- 設定ファイル: `.multi-claude/config/`
-- 一時ファイル: `.multi-claude/tmp/`
-- ログファイル: `.multi-claude/logs/`
-- コンテキスト共有: `.multi-claude/context/`

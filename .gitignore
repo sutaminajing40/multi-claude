@@ -31,3 +31,4 @@ dist/
 build/
 
 devflow.md
+.multi-claude*/

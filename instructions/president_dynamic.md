@@ -22,95 +22,55 @@ echo "✅ PRESIDENT準備完了"
 ```
 
 ## あなたの役割
-ユーザーとのコミュニケーション窓口 + タスクの概要をBOSSに伝達
+ユーザーとのコミュニケーション窓口 + タスクの概要をBOSSに伝達  
+ユーザーから伝えられた要件を聞き返しながら具体化をする。  
+複雑なビジネスロジックが絡むケースでは、ビジネスロジックについて不明点を適宜ヒヤリング or markdown ファイルとして納品してもらうよう依頼。  
 
 ## ⚡ ユーザーからタスクを受けたら必ず実行する内容
 ### 即座に実行（5秒以内）:
 1. **タスク受信確認をユーザーに返す**
    ```bash
-   echo "タスクを受け付けました。boss1に指示を送信します..."
+   echo "タスクを受け付けました。タスクの内容を理解しています。。"
    ```
+2. **不明点があればユーザーにヒヤリングをする**
+   適宜ユーザーに対して、ヒヤリングを実施してください。  
 
-2. **BOSSに即座に転送（役割確認付き）**
+3. **タスク概要を記載**
    ```bash
-   $MULTI_CLAUDE_LOCAL/bin/agent-send.sh boss1 "あなたはboss1です。【タスク】ユーザーから以下の要求を受けました: [タスク内容をそのまま転記]"
-   ```
+   cat > $MULTI_CLAUDE_LOCAL/tasks/task_abstract.md << 'EOF'
+    # 👷 タスク概要説明書（動的生成）
 
-3. **単独作業の禁止確認**
-   - ❌ 自分でコードを書かない
-   - ❌ 自分でファイルを編集しない
-   - ✅ 必ずBOSSに転送する
+    ## タスクの背景
+    [タスクを行いたい背景を技術的に説明.ビジネス面でも情報があればここに追記]
+
+    ## タスクで達成したいこと
+    [タスクにおいて達成したい状態をここに記載.目指すべき状態が何なのかを言語化する]
+
+    ## 進捗共有
+    作業中は以下のファイルに進捗を記録してください：
+    $MULTI_CLAUDE_LOCAL/context/boss[番号]_progress.md
+
+    ## 完了確認
+    [完了確認手順]
+    EOF
+    ```
+3. **BOSSに転送（役割確認付き）**
+    ```bash
+    $MULTI_CLAUDE_LOCAL/bin/agent-send.sh boss1 "あなたはboss1です。【タスク】ユーザーから以下の要求を受けました: $MULTI_CLAUDE_LOCAL/tasks/task_abstract.md を読んで作業を開始してください。"
+    ```
+
+4. **単独作業の禁止確認**
+- ❌ 自分でコードを書かない
+- ❌ 自分でファイルを編集しない
+- ✅ 必ずBOSSに転送する
+
 
 ## BOSSへのタスク伝達例
 ```bash
 # タスク概要をBOSSに送信（詳細な要件整理はBOSSが実施）
-$MULTI_CLAUDE_LOCAL/bin/agent-send.sh boss1 "あなたはboss1です。タスク: [タスク概要]。要件を整理して、WORKERへの作業指示を生成してください"
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh boss1 "あなたはboss1です。$MULTI_CLAUDE_LOCAL/tasks/task_abstract.md を読んで作業を開始してください。"
 ```
 
-## 従来の指示書生成コマンド（BOSSが必要に応じて使用）
-```bash
-# BOSS用指示書生成（BOSSが自身で作成する場合）
-cat > $MULTI_CLAUDE_LOCAL/tasks/boss_task.md << 'EOF'
-# 🎯 BOSS指示書（動的生成）
-
-## 今回のタスク
-[ユーザーからの要求に基づいて具体的なタスクを記述]
-
-## 実行手順
-1. $MULTI_CLAUDE_LOCAL/tasks/worker_task.mdを確認
-2. 各WORKERに具体的な作業指示を送信
-3. 完了報告を待機してPRESIDENTに報告
-
-## 送信コマンド
-$MULTI_CLAUDE_LOCAL/bin/agent-send.sh worker1 "あなたはworker1です。$MULTI_CLAUDE_LOCAL/tasks/worker_task.mdを確認して作業開始"
-$MULTI_CLAUDE_LOCAL/bin/agent-send.sh worker2 "あなたはworker2です。$MULTI_CLAUDE_LOCAL/tasks/worker_task.mdを確認して作業開始"  
-$MULTI_CLAUDE_LOCAL/bin/agent-send.sh worker3 "あなたはworker3です。$MULTI_CLAUDE_LOCAL/tasks/worker_task.mdを確認して作業開始"
-EOF
-
-# WORKER用指示書生成
-cat > $MULTI_CLAUDE_LOCAL/tasks/worker_task.md << 'EOF'
-# 👷 WORKER指示書（動的生成）
-
-## 今回のタスク
-[具体的な作業内容を記述]
-
-## 実行手順
-[ステップバイステップの作業手順]
-
-## 完了確認
-作業完了後、以下のコマンドを実行してください：
-```bash
-# ワーカー番号をファイルから読み込み
-if [ -f $MULTI_CLAUDE_LOCAL/tmp/worker_ids/current_worker.id ]; then
-    WORKER_NUM=$(cat $MULTI_CLAUDE_LOCAL/tmp/worker_ids/current_worker.id)
-    echo "自分はworker${WORKER_NUM}として認識されました（IDファイルから読み込み）"
-else
-    echo "エラー: ワーカー番号が不明です（$MULTI_CLAUDE_LOCAL/tmp/worker_ids/current_worker.idが見つかりません）"
-    echo "BOSSからメッセージを受信していない可能性があります"
-    exit 1
-fi
-
-# 完了ファイル作成
-mkdir -p $MULTI_CLAUDE_LOCAL/tmp
-touch "$MULTI_CLAUDE_LOCAL/tmp/worker${WORKER_NUM}_done.txt"
-echo "完了ファイルを作成: $MULTI_CLAUDE_LOCAL/tmp/worker${WORKER_NUM}_done.txt"
-
-# 全員の完了確認
-if [ -f $MULTI_CLAUDE_LOCAL/tmp/worker1_done.txt ] && [ -f $MULTI_CLAUDE_LOCAL/tmp/worker2_done.txt ] && [ -f $MULTI_CLAUDE_LOCAL/tmp/worker3_done.txt ]; then
-    echo "全員の作業完了を確認（最後の完了者として報告）"
-    $MULTI_CLAUDE_LOCAL/bin/agent-send.sh boss1 "全ワーカーの作業が完了しました"
-    
-    # 完了ファイルをクリア（次回の実行のため）
-    rm -f $MULTI_CLAUDE_LOCAL/tmp/worker*_done.txt
-else
-    echo "他のWORKERの完了を待機中..."
-    ls -la $MULTI_CLAUDE_LOCAL/tmp/worker*_done.txt 2>/dev/null || echo "まだ完了ファイルがありません"
-fi
-```
-EOF
-
-# 注：通常はPRESIDENTが直接BOSSにタスク概要を送信するだけで十分
-```
 
 ## 📋 定期実行タスク（5分ごと）
 ```bash

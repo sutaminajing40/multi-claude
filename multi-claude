@@ -291,6 +291,8 @@ setup_first_time() {
         cp "$MULTI_CLAUDE_GLOBAL/instructions/president_dynamic.md" "$MULTI_CLAUDE_LOCAL/instructions/" 2>/dev/null || true
         cp "$MULTI_CLAUDE_GLOBAL/instructions/boss_dynamic.md" "$MULTI_CLAUDE_LOCAL/instructions/" 2>/dev/null || true
         cp "$MULTI_CLAUDE_GLOBAL/instructions/worker_dynamic.md" "$MULTI_CLAUDE_LOCAL/instructions/" 2>/dev/null || true
+        cp "$MULTI_CLAUDE_GLOBAL/instructions/architect_dynamic.md" "$MULTI_CLAUDE_LOCAL/instructions/" 2>/dev/null || true
+        cp "$MULTI_CLAUDE_GLOBAL/instructions/qa_dynamic.md" "$MULTI_CLAUDE_LOCAL/instructions/" 2>/dev/null || true
         log_success "✅ 指示書ファイルをコピーしました"
     else
         log_error "グローバル指示書ディレクトリが見つかりません: $MULTI_CLAUDE_GLOBAL/instructions"
@@ -532,12 +534,14 @@ sleep 3
 log_info "🤖 Claude Code自動起動中..."
 
 # MULTIAGENT起動（全ペイン）
-for i in {0..3}; do
+for i in {0..5}; do
     case $i in
         0) agent_name="boss1" ;;
         1) agent_name="worker1" ;;
-        2) agent_name="worker2" ;;
-        3) agent_name="worker3" ;;
+        2) agent_name="architect" ;;
+        3) agent_name="worker2" ;;
+        4) agent_name="qa" ;;
+        5) agent_name="worker3" ;;
     esac
     log_info "🤖 $agent_name 起動中..."
     # 環境変数を設定してからClaude Codeを起動
@@ -552,14 +556,85 @@ done
 
 log_success "✅ Claude Code起動完了"
 
+# timing_control.shのsource
+TIMING_CONTROL_PATH=""
+# 新しいパス（bin/）を優先的にチェック
+if [ -f "$PROJECT_DIR/bin/timing_control.sh" ]; then
+    TIMING_CONTROL_PATH="$PROJECT_DIR/bin/timing_control.sh"
+elif [ -f "$MULTI_CLAUDE_LOCAL/timing_control.sh" ]; then
+    TIMING_CONTROL_PATH="$MULTI_CLAUDE_LOCAL/timing_control.sh"
+elif [ -f "$PROJECT_DIR/timing_control.sh" ]; then
+    TIMING_CONTROL_PATH="$PROJECT_DIR/timing_control.sh"
+fi
+
+if [ -n "$TIMING_CONTROL_PATH" ]; then
+    source "$TIMING_CONTROL_PATH"
+    log_info "📊 timing_control.sh loaded from: $TIMING_CONTROL_PATH"
+fi
+
+# ログイン状態検出とタイミング制御機能（timing_control.sh統合版）
+wait_for_claude_login() {
+    local pane_id="$1"
+    local agent_name="$2"
+    
+    # timing_control.shの関数が利用可能な場合はそれを使用
+    if type -t wait_for_claude_with_retry >/dev/null 2>&1; then
+        log_info "🔄 高度な待機機能を使用: $agent_name"
+        wait_for_claude_with_retry "$pane_id" 2 5
+        return $?
+    fi
+    
+    # フォールバック: 従来の実装
+    local max_wait=60  # 最大60秒待機
+    local wait_interval=2  # 2秒間隔でチェック
+    local elapsed=0
+    
+    log_info "⏳ $agent_name のClaude Codeログイン状態を確認中..."
+    
+    while [ $elapsed -lt $max_wait ]; do
+        # tmux pane-captureでClaude Codeの出力を取得
+        local output=$(tmux capture-pane -t "$pane_id" -p 2>/dev/null || echo "")
+        
+        # ログイン完了パターンをチェック
+        if echo "$output" | grep -q -i "ready\|claude\|assistant\|how can i help\|what can i do"; then
+            log_success "✅ $agent_name ログイン完了を確認"
+            return 0
+        fi
+        
+        # ログインプロンプトが表示されているかチェック
+        if echo "$output" | grep -q -i "login\|sign in\|authenticate"; then
+            log_info "🔑 $agent_name でログインが必要です。ログイン完了をお待ちください..."
+        fi
+        
+        sleep $wait_interval
+        elapsed=$((elapsed + wait_interval))
+        
+        # 進捗表示（10秒ごと）
+        if [ $((elapsed % 10)) -eq 0 ]; then
+            log_info "⏱  $agent_name 待機中... (${elapsed}/${max_wait}秒)"
+        fi
+    done
+    
+    log_error "⚠️ $agent_name のログイン確認がタイムアウトしました (${max_wait}秒)"
+    return 1
+}
+
 # エージェントに役割を認識させる初期メッセージを送信
-log_info "⏳ Claude Codeの起動を待機中..."
-sleep 5  # Claude Codeが完全に起動するまで待機
+log_info "⏳ Claude Codeの起動とログイン完了を待機中..."
+# 各エージェントのログイン完了を個別に確認
+wait_for_claude_login "multiagent:0.0" "boss1"
+wait_for_claude_login "multiagent:0.1" "worker1" 
+wait_for_claude_login "multiagent:0.2" "architect"
+wait_for_claude_login "multiagent:0.3" "worker2"
+wait_for_claude_login "multiagent:0.4" "qa"
+wait_for_claude_login "multiagent:0.5" "worker3"
 log_info "🤖 エージェントに役割を認識させています..."
 tmux send-keys -t multiagent:0.0 "あなたはboss1です。CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/boss_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
 tmux send-keys -t multiagent:0.1 "あなたはworker1です。CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
-tmux send-keys -t multiagent:0.2 "あなたはworker2です。CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
-tmux send-keys -t multiagent:0.3 "あなたはworker3です。CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.2 "あなたはarchitectです。CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/architect_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.3 "あなたはworker2です。CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.4 "あなたはqaです。CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/qa_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
+tmux send-keys -t multiagent:0.5 "あなたはworker3です。CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/worker_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
 
 # STEP 4.5: システム起動確認とタスクチェック
 log_info "🔄 システム起動確認中..."
@@ -651,8 +726,9 @@ else
     tmux send-keys -t president:0 "export MULTI_CLAUDE_GLOBAL='$MULTI_CLAUDE_GLOBAL'" C-m
     tmux send-keys -t president:0 "$CLAUDE_CMD $SKIP_PERMISSIONS" C-m
     
-    # CLAUDE.mdの存在を確認するメッセージを送信（起動完了後）
-    sleep 5  # Claude Codeが完全に起動するまで待機
+    # PRESIDENTのログイン完了を確認してから指示を送信
+    log_info "⏳ PRESIDENTのログイン完了を待機中..."
+    wait_for_claude_login "president:0" "PRESIDENT"
     tmux send-keys -t president:0 "あなたはPRESIDENTです。まず、CLAUDE.mdと$MULTI_CLAUDE_LOCAL/instructions/president_dynamic.mdを読み込んで、指示に従って行動してください。" C-m
     
     # PRESIDENT用ターミナルを別タブで起動

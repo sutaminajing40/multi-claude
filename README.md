@@ -22,6 +22,7 @@ PRESIDENT (統括) → BOSS (管理) → WORKERs (実行)
 - **🔄 エージェント間通信**: tmux を利用した高速メッセージング
 - **📦 Homebrew 対応**: `brew install`でワンステップインストール
 - **🔍 堅牢な役割判定システム**: 多層防御による確実な役割認識（v1.3.0〜）
+- **🚀 完全自動起動**: Claude Codeの自動起動と初期メッセージ送信（v1.4.0〜）
 
 ## 🚀 インストール方法
 
@@ -61,6 +62,12 @@ multi-claude
 multi-claude
 ```
 
+起動時に自動的に：
+- 7つのClaude Codeインスタンスが起動
+- 各エージェントに役割が割り当てられる
+- 初期メッセージが自動送信される
+- 全エージェントが準備完了状態になる
+
 ### 2. PRESIDENT へタスク依頼
 
 PRESIDENT ウィンドウで直接タスクを入力：
@@ -86,11 +93,37 @@ PRESIDENT が自動的に：
 📊 PRESIDENT セッション (1ペイン)
 └── PRESIDENT: プロジェクト統括責任者
 
-📊 multiagent セッション (4ペイン)
-├── boss1: チームリーダー
-├── worker1: 実行担当者A
-├── worker2: 実行担当者B
-└── worker3: 実行担当者C
+📊 multiagent セッション (6ペイン)
+├── boss1: チームリーダー（要件整理・指示書生成）
+├── worker1: 実装担当（コア機能）
+├── architect: 設計・アーキテクチャ担当
+├── worker2: 実装担当（サブ機能）
+├── qa: 品質保証・テスト担当
+└── worker3: 実装担当（統合・デバッグ）
+```
+
+### 開発フロー
+
+```
+ユーザー 
+  ↓
+PRESIDENT（タスク概要理解）
+  ↓
+boss1（要件整理・指示書生成）
+  ↓
+第1段階（設計・テスト準備）：
+  - architect: Design Doc作成
+  - qa: テストシナリオ作成
+  ↓
+第2段階（実装・品質保証）：
+  - worker1: コア機能実装
+  - worker2: サブ機能実装
+  - worker3: 統合・デバッグ
+  - qa: テスト実行・品質保証
+  ↓
+boss1（進捗管理・完了確認）
+  ↓
+PRESIDENT（ユーザーへ報告）
 ```
 
 ## 🛠️ 高度な使い方
@@ -98,11 +131,17 @@ PRESIDENT が自動的に：
 ### エージェント間メッセージ送信
 
 ```bash
-./agent-send.sh [エージェント名] "[メッセージ]"
+# プロジェクトルートから実行
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh [エージェント名] "[メッセージ]"
 
 # 例
-./agent-send.sh boss1 "緊急タスクです"
-./agent-send.sh worker1 "作業完了しました"
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh boss1 "緊急タスクです"
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh worker1 "作業完了しました"
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh architect "設計レビューお願いします"
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh qa "テスト実施してください"
+
+# 利用可能なエージェント一覧
+$MULTI_CLAUDE_LOCAL/bin/agent-send.sh --list
 ```
 
 ### システム管理コマンド
@@ -116,6 +155,31 @@ multi-claude --help
 
 # バージョン確認
 multi-claude --version
+
+# 権限確認をスキップして起動（開発用）
+multi-claude --dangerously-skip-permissions
+
+# ターミナル設定をリセット
+multi-claude --reset-terminal
+
+# PRESIDENTに直接指示を送信
+multi-claude "Pythonでファイル処理スクリプトを作成して"
+```
+
+### 自動起動機能
+
+```bash
+# エージェントの状態確認
+$MULTI_CLAUDE_LOCAL/bin/agent-status.sh list
+
+# 特定エージェントの状態確認
+$MULTI_CLAUDE_LOCAL/bin/agent-status.sh check worker1
+
+# システム健全性チェック
+bin/health-check.sh
+
+# エラーハンドリングとリカバリ
+bin/error-handler.sh recover
 ```
 
 ## 🔄 CI/CD システム
@@ -155,6 +219,8 @@ git push origin v1.0.8
 - `instructions/president_dynamic.md`: PRESIDENT 役割定義
 - `instructions/boss_dynamic.md`: BOSS 役割定義
 - `instructions/worker_dynamic.md`: WORKER 役割定義
+- `instructions/architect_dynamic.md`: ARCHITECT 役割定義
+- `instructions/qa_dynamic.md`: QA 役割定義
 
 ## 🧪 デバッグ・ログ
 
@@ -162,13 +228,19 @@ git push origin v1.0.8
 
 ```bash
 # 送信ログ
-cat logs/send_log.txt
+tail -f $MULTI_CLAUDE_LOCAL/session/logs/send_log.txt
 
 # 特定エージェントのログ
-grep "boss1" logs/send_log.txt
+grep "boss1" $MULTI_CLAUDE_LOCAL/session/logs/send_log.txt
 
-# 完了ファイル確認
-ls -la ./tmp/worker*_done.txt
+# エージェント起動ログ
+cat $MULTI_CLAUDE_LOCAL/session/logs/launch-agent.log
+
+# エージェント進捗確認
+ls -la $MULTI_CLAUDE_LOCAL/context/*_progress.md
+
+# 現在のタスク確認
+cat $MULTI_CLAUDE_LOCAL/tasks/current_task.md
 ```
 
 ### セッション確認
@@ -211,6 +283,10 @@ tmux list-panes -t multiagent
 - 🔧 エラーフリーな AppleScript 実装
 - 📦 Homebrew Formula 対応
 - 🚀 CI/CD 自動化システム
+- 🤖 完全自動起動機能（Claude Code自動起動・初期メッセージ送信）
+- 🏗️ アーキテクト・QAエージェント追加（6エージェント体制）
+- 📊 高度な状態管理システム（JSON形式での状態追跡）
+- 🔄 エラーハンドリングとリカバリー機能
 
 ### 📄 ライセンス
 

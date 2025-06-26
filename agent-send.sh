@@ -8,8 +8,10 @@ get_agent_target() {
         "president") echo "president" ;;
         "boss1") echo "multiagent:0.0" ;;
         "worker1") echo "multiagent:0.1" ;;
-        "worker2") echo "multiagent:0.2" ;;
-        "worker3") echo "multiagent:0.3" ;;
+        "architect") echo "multiagent:0.2" ;;
+        "worker2") echo "multiagent:0.3" ;;
+        "qa") echo "multiagent:0.4" ;;
+        "worker3") echo "multiagent:0.5" ;;
         *) echo "" ;;
     esac
 }
@@ -25,9 +27,11 @@ show_usage() {
 利用可能エージェント:
   president - プロジェクト統括責任者
   boss1     - チームリーダー  
-  worker1   - 実行担当者A
-  worker2   - 実行担当者B
-  worker3   - 実行担当者C
+  worker1   - 実装担当者1
+  architect - 設計・アーキテクチャ担当
+  worker2   - 実装担当者2
+  qa        - 品質保証・テスト担当
+  worker3   - 実装担当者3（統合・デバッグ）
 
 使用例:
   $0 president "指示書に従って"
@@ -42,9 +46,11 @@ show_agents() {
     echo "=========================="
     echo "  president → president:0     (プロジェクト統括責任者)"
     echo "  boss1     → multiagent:0.0  (チームリーダー)"
-    echo "  worker1   → multiagent:0.1  (実行担当者A)"
-    echo "  worker2   → multiagent:0.2  (実行担当者B)" 
-    echo "  worker3   → multiagent:0.3  (実行担当者C)"
+    echo "  worker1   → multiagent:0.1  (実装担当者1)"
+    echo "  architect → multiagent:0.2  (設計・アーキテクチャ担当)"
+    echo "  worker2   → multiagent:0.3  (実装担当者2)" 
+    echo "  qa        → multiagent:0.4  (品質保証・テスト担当)"
+    echo "  worker3   → multiagent:0.5  (実装担当者3・統合)"
 }
 
 # ログ記録
@@ -53,14 +59,16 @@ log_send() {
     local message="$2"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     
-    mkdir -p "$MULTI_CLAUDE_LOCAL/logs"
-    echo "[$timestamp] $agent: SENT - \"$message\"" >> "$MULTI_CLAUDE_LOCAL/logs/send_log.txt"
+    mkdir -p "$MULTI_CLAUDE_LOCAL/session/logs"
+    echo "[$timestamp] $agent: SENT - \"$message\"" >> "$MULTI_CLAUDE_LOCAL/session/logs/send_log.txt"
 }
 
-# メッセージ送信
+# メッセージ送信（改良版：確実なEnterキー送信）
 send_message() {
     local target="$1"
     local message="$2"
+    local retry_count=0
+    local max_retries=3
     
     echo "📤 送信中: $target ← '$message'"
     
@@ -70,11 +78,33 @@ send_message() {
     
     # メッセージ送信
     tmux send-keys -t "$target" "$message"
-    sleep 0.1
+    sleep 0.2
     
-    # エンター押下
-    tmux send-keys -t "$target" C-m
-    sleep 0.5
+    # Enterキー送信（リトライ機能付き）
+    while [ $retry_count -lt $max_retries ]; do
+        # 複数の方法でEnterキーを送信
+        tmux send-keys -t "$target" Enter
+        sleep 0.1
+        tmux send-keys -t "$target" C-m
+        sleep 0.5
+        
+        # メッセージが処理されたか簡易確認
+        if [ $retry_count -eq 0 ]; then
+            # 初回は確実に送信
+            break
+        fi
+        
+        retry_count=$((retry_count + 1))
+        if [ $retry_count -lt $max_retries ]; then
+            echo "⚠️  Enterキー送信をリトライ中... ($retry_count/$max_retries)"
+            sleep 1
+        fi
+    done
+    
+    if [ $retry_count -eq $max_retries ]; then
+        echo "⚠️  警告: Enterキー送信が不完全な可能性があります"
+        log_send "system" "Enter key send may have failed for $target"
+    fi
 }
 
 # ワーカーID記録
