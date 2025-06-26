@@ -12,7 +12,7 @@
 複数の Claude Code インスタンスが協調動作する分散処理システム
 
 ```
-PRESIDENT (統括) → BOSS (管理) → WORKERs (実行)
+PRESIDENT (統括) → BOSS (管理) → Architect/QA/WORKERs (実行)
 ```
 
 ### 主要機能
@@ -26,7 +26,7 @@ PRESIDENT (統括) → BOSS (管理) → WORKERs (実行)
 
 ## 🚀 インストール方法
 
-### 方法 1: Homebrew 経由（推奨）
+### 方法 1: Homebrew 経由←（尾原の手元では考慮していないです）
 
 ```bash
 # リポジトリ追加
@@ -39,7 +39,7 @@ brew install multi-claude
 multi-claude
 ```
 
-### 方法 2: 手動インストール
+### 方法 2: 手動インストール（dog fooding 段階ではこちらが推奨）
 
 ```bash
 # リポジトリクローン
@@ -59,6 +59,7 @@ multi-claude
 
 ```bash
 # 任意のディレクトリで実行可能
+# 事前に claude コマンドを実行してログインしておくと各種エージェントの立ち上がりがスムーズになります
 multi-claude
 ```
 
@@ -83,7 +84,7 @@ PRESIDENT ウィンドウで直接タスクを入力：
 PRESIDENT が自動的に：
 
 1. タスクを分析
-2. BOSS と WORKER 用の指示書を生成
+2. BOSS 用の指示書を生成
 3. 各エージェントに指示を送信
 4. 実行結果を収集・報告
 
@@ -176,10 +177,19 @@ $MULTI_CLAUDE_LOCAL/bin/agent-status.sh list
 $MULTI_CLAUDE_LOCAL/bin/agent-status.sh check worker1
 
 # システム健全性チェック
-bin/health-check.sh
+$MULTI_CLAUDE_LOCAL/bin/health-check.sh
 
 # エラーハンドリングとリカバリ
-bin/error-handler.sh recover
+$MULTI_CLAUDE_LOCAL/bin/error-handler.sh recover
+```
+
+## うまく動かないな？と思ったら
+
+multi-claude を起動した path （$MULTI_CLAUDE_LOCAL) の instructions 配下で、各種エージェントに対して送信した指示書が入っています。  
+ここの内容をアップデートしてから、再起動をするといい感じになります。
+```sh
+multi-claude --exit
+multi-claude
 ```
 
 ## 🔄 CI/CD システム
